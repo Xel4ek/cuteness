@@ -25,28 +25,55 @@ export class GraphHelper {
     return matrix;
   }
 
-  public static  hasNoIsolatedVertices(adjacencyMatrix: number[][]): boolean {
-    const vertices = adjacencyMatrix.length;
+  public static hasIsolatedNodes(adjacencyMatrix: number[][]): boolean {
+    for (let i = 0; i < adjacencyMatrix.length; i++) {
+      let inboundCount = 0;
+      let outboundCount = 0;
 
-    function isConnected(a: number, b: number): boolean {
-      return adjacencyMatrix[a][b] === 1 || adjacencyMatrix[b][a] === 1;
-    }
+      for (let j = 0; j < adjacencyMatrix.length; j++) {
+        if (adjacencyMatrix[j][i] > 0) {
+          inboundCount++;
+        }
 
-    for (let i = 0; i < vertices; i++) {
-      let isolated = true;
-
-      for (let j = 0; j < vertices; j++) {
-        if (i !== j && isConnected(i, j)) {
-          isolated = false;
-          break;
+        if (adjacencyMatrix[i][j] > 0) {
+          outboundCount++;
         }
       }
 
-      if (isolated) {
-        return false;
+      if (inboundCount === 0 || outboundCount === 0) {
+        return true;
       }
     }
 
-    return true;
+    return false;
+  }
+
+  public static generateDirectedAdjacencyMatrix(
+    vertices: number,
+    fillPercentage: number,
+  ): number[][] {
+    if (fillPercentage < 0 || fillPercentage > 1) {
+      throw new Error('Fill percentage must be between 0 and 1.');
+    }
+
+    const matrix: number[][] = [];
+
+    for (let i = 0; i < vertices; i++) {
+      matrix[i] = [];
+      for (let j = 0; j < vertices; j++) {
+        matrix[i].push(0); // Заполнение матрицы нулями
+      }
+    }
+
+    for (let i = 0; i < vertices; i++) {
+      for (let j = 0; j < vertices; j++) {
+        if (i !== j && Math.random() <= fillPercentage) {
+          const weight = Math.random();
+          matrix[i][j] = weight; // Присваивание случайного веса ребрам
+        }
+      }
+    }
+
+    return matrix;
   }
 }

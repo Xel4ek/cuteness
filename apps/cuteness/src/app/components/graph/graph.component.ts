@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GraphModule } from '@swimlane/ngx-graph';
 import { Edge } from '@swimlane/ngx-graph/lib/models/edge.model';
@@ -11,9 +11,24 @@ import { Node } from '@swimlane/ngx-graph/lib/models/node.model'
   styleUrls: ['./graph.component.scss'],
 })
 export class GraphComponent {
-  protected links: Edge[] = [];
-  protected nodes: Node[] = [];
-  protected _adjacencyMatrix: number[][] = [[]];
+  protected links: (Edge & { weight: number, used?: boolean })[] = [];
+  protected nodes: (Node )[] = [];
+  private _adjacencyMatrix: number[][] = [];
+  private _solution : number[] = [];
+
+  @Input()
+  public set solution(solution: number[]) {
+    if (Array.isArray(solution)) {
+      this._solution = solution;
+      this.processLinks();
+      console.log(this.links);
+    }
+  }
+
+  public get solution() {
+    return this._solution;
+  }
+
   @Input()
   public set adjacencyMatrix(adjacencyMatrix: number[][]) {
     this._adjacencyMatrix = adjacencyMatrix;
@@ -28,27 +43,53 @@ export class GraphComponent {
     this.links = [];
     this.nodes = [];
 
-    // Создание узлов
+    // Создание массива вершин (nodes)
     for (let i = 0; i < this.adjacencyMatrix.length; i++) {
       this.nodes.push({
-        id: `node${i}`,
-        label: String.fromCharCode(65 + i) // Конвертирование индекса в символ ASCII (A, B, C, ...)
+        id: i.toString(),
+        label: `${i}`
       });
     }
 
-    // Создание связей на основе матрицы смежности
-    this.adjacencyMatrix.forEach((row, i) => {
-      row.forEach((value, j) => {
-        if (value === 1 &&
-          !this.links.some(link => (link.source === `node${j}` && link.target === `node${i}`) || (link.target === `node${j}` && link.source === `node${i}`))) {
+    // Создание массива связей (links)
+    for (let i = 0; i < this.adjacencyMatrix.length; i++) {
+      for (let j = 0; j < this.adjacencyMatrix[i].length; j++) {
+        if (this.adjacencyMatrix[i][j] > 0) {
           this.links.push({
             id: `link${i}-${j}`,
-            source: `node${i}`,
-            target: `node${j}`,
-            label: `${String.fromCharCode(65 + i)} - ${String.fromCharCode(65 + j)}`
+            source: i.toString(),
+            target: j.toString(),
+            label: this.adjacencyMatrix[i][j].toString(),
+            weight: this.adjacencyMatrix[i][j],
           });
         }
+      }
+    }
+
+  }
+
+  private getRandomColor(): string {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+
+    return color;
+  }
+
+  private processLinks() {
+    for (let i = 0; i < this.solution.length - 1; i++) {
+      const source = this.solution[i].toString();
+      const target = this.solution[i + 1].toString();
+
+      this.links.forEach((link) => {
+        if (link.source === source && link.target === target) {
+          link.used = true;
+        }
       });
-    });
+    }
+    this.links = [...this.links]
   }
 }

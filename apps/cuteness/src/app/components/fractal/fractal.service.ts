@@ -11,8 +11,8 @@ export class FractalService {
 
   public bindCanvas(canvasElement: ElementRef<HTMLCanvasElement>) {
     this.canvasElement = canvasElement.nativeElement;
-    this.width = this.canvasElement.width;
-    this.height = this.canvasElement.height;
+    this.width = 300; //this.canvasElement.width;
+    this.height = 150; //this.canvasElement.height;
   }
 
   public draw() {

@@ -1,7 +1,7 @@
 {
   "root": true,
   "ignorePatterns": ["**/*"],
-  "plugins": ["@nrwl/nx"],
+  "plugins": ["@nx"],
   "env": {
     "jest": true
   },
@@ -10,7 +10,7 @@
       "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
       "extends": ["prettier"],
       "rules": {
-        "@nrwl/nx/enforce-module-boundaries": [
+        "@nx/enforce-module-boundaries": [
           "error",
           {
             "enforceBuildableLibDependency": true,
@@ -26,31 +26,35 @@
         "no-console": "warn",
         "quotes": ["warn", "single"],
         "padding-line-between-statements": [
-          "error", { "blankLine": "always", "prev": "*", "next": "return" },
-          { "blankLine": "any",    "prev": ["const", "let", "var"], "next": ["const", "let", "var"] }
+          "error",
+          { "blankLine": "always", "prev": "*", "next": "return" },
+          { "blankLine": "any", "prev": ["const", "let", "var"], "next": ["const", "let", "var"] }
         ],
         "curly": ["error", "all"]
       }
     },
     {
       "files": ["*.ts", "*.tsx"],
-      "extends": ["plugin:@nrwl/nx/typescript"],
+      "extends": ["plugin:@nx/typescript"],
       "rules": {
-        "@typescript-eslint/explicit-member-accessibility": ["error", {
-          "accessibility": "explicit",
-          "overrides": {
-            "accessors": "explicit",
-            "constructors": "no-public",
-            "methods": "explicit",
-            "properties": "explicit",
-            "parameterProperties": "explicit"
+        "@typescript-eslint/explicit-member-accessibility": [
+          "error",
+          {
+            "accessibility": "explicit",
+            "overrides": {
+              "accessors": "explicit",
+              "constructors": "no-public",
+              "methods": "explicit",
+              "properties": "explicit",
+              "parameterProperties": "explicit"
+            }
           }
-        }]
+        ]
       }
     },
     {
       "files": ["*.js", "*.jsx"],
-      "extends": ["plugin:@nrwl/nx/javascript"],
+      "extends": ["plugin:@nx/javascript"],
       "rules": {}
     }
   ]
