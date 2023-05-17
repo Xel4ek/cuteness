@@ -5,7 +5,7 @@ import { Route } from '@angular/router';
 import { GraphComponent } from '../graph/graph.component';
 import { GraphHelper } from '../../tools/graph-helper';
 import { MatTableModule } from '@angular/material/table';
-import { GraphAlgorithms } from '../../tools/ant-colony/graph-algorithms';
+import { GraphAlgorithms, TsmResult } from '../../tools/ant-colony/graph-algorithms';
 import { MatSliderModule } from '@angular/material/slider';
 import { FormsModule } from '@angular/forms';
 
@@ -19,18 +19,17 @@ import { FormsModule } from '@angular/forms';
 export class AntColonyComponent {
   protected adjacencyMatrix: number[][] = [];
   protected displayedColumns: string[] = [];
-  protected solution: any;
+  protected solution?: TsmResult | null;
   protected size = 5;
 
   protected generateMatrix() {
     this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, 0.5);
     this.displayedColumns = Array.from({ length: this.adjacencyMatrix.length }, (_, i) => i.toString());
-    console.log(this.adjacencyMatrix);
+    this.solution = undefined;
   }
 
   protected solve() {
     this.solution = GraphAlgorithms.solveTravelingSalesmanProblem(this.adjacencyMatrix);
-
   }
 }
 

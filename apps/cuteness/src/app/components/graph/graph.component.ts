@@ -21,7 +21,6 @@ export class GraphComponent {
     if (Array.isArray(solution)) {
       this._solution = solution;
       this.processLinks();
-      console.log(this.links);
     }
   }
 
@@ -43,7 +42,6 @@ export class GraphComponent {
     this.links = [];
     this.nodes = [];
 
-    // Создание массива вершин (nodes)
     for (let i = 0; i < this.adjacencyMatrix.length; i++) {
       this.nodes.push({
         id: i.toString(),
@@ -51,7 +49,6 @@ export class GraphComponent {
       });
     }
 
-    // Создание массива связей (links)
     for (let i = 0; i < this.adjacencyMatrix.length; i++) {
       for (let j = 0; j < this.adjacencyMatrix[i].length; j++) {
         if (this.adjacencyMatrix[i][j] > 0) {
