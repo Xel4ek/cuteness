@@ -17,7 +17,7 @@ export class GraphComponent {
   private _solution : number[] = [];
 
   @Input()
-  public set solution(solution: number[]) {
+  public set solution(solution: number[] | undefined) {
     if (Array.isArray(solution)) {
       this._solution = solution;
       this.processLinks();
@@ -77,16 +77,18 @@ export class GraphComponent {
   }
 
   private processLinks() {
-    for (let i = 0; i < this.solution.length - 1; i++) {
-      const source = this.solution[i].toString();
-      const target = this.solution[i + 1].toString();
+    if (this.solution) {
+      for (let i = 0; i < this.solution.length - 1; i++) {
+        const source = this.solution[i].toString();
+        const target = this.solution[i + 1].toString();
 
-      this.links.forEach((link) => {
-        if (link.source === source && link.target === target) {
-          link.used = true;
-        }
-      });
+        this.links.forEach((link) => {
+          if (link.source === source && link.target === target) {
+            link.used = true;
+          }
+        });
+      }
+      this.links = [...this.links]
     }
-    this.links = [...this.links]
   }
 }
