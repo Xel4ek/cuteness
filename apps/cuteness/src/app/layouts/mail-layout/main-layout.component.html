@@ -1,0 +1,21 @@
+<mat-drawer-container class="full-screen" autosize="true">
+  <mat-drawer-content class="full-screen">
+    <mat-toolbar color="primary" class="example-toolbar">
+      <button mat-icon-button (click)="nav.toggle()"><mat-icon>menu</mat-icon></button>
+      <a mat-button class="mat-headline-5" [style.margin.px]="0" routerLink="/">Cuteness</a>
+    </mat-toolbar>
+
+    <mat-sidenav-container class="full-screen">
+      <mat-sidenav #nav mode='over' class="sidenav">
+        <mat-nav-list>
+          <a mat-list-item [routerLink]="['/', nav.toLowerCase()]" *ngFor="let nav of modules">{{nav}}</a>
+        </mat-nav-list>
+      </mat-sidenav>
+
+      <mat-sidenav-content class="mat-sidenav-content">
+        <router-outlet></router-outlet>
+      </mat-sidenav-content>
+    </mat-sidenav-container>
+  </mat-drawer-content>
+</mat-drawer-container>
+

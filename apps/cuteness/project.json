@@ -7,16 +7,26 @@
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:browser",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/apps/cuteness",
         "index": "apps/cuteness/src/index.html",
         "main": "apps/cuteness/src/main.ts",
-        "polyfills": ["zone.js"],
+        "polyfills": [
+          "zone.js"
+        ],
         "tsConfig": "apps/cuteness/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
-        "assets": ["apps/cuteness/src/favicon.ico", "apps/cuteness/src/assets"],
-        "styles": ["apps/cuteness/src/styles.scss"],
+        "assets": [
+          "apps/cuteness/src/favicon.ico",
+          "apps/cuteness/src/assets"
+        ],
+        "styles": [
+          "@angular/material/prebuilt-themes/purple-green.css",
+          "apps/cuteness/src/styles.scss"
+        ],
         "scripts": []
       },
       "configurations": {
@@ -66,14 +76,21 @@
     },
     "lint": {
       "executor": "@nrwl/linter:eslint",
-      "outputs": ["{options.outputFile}"],
+      "outputs": [
+        "{options.outputFile}"
+      ],
       "options": {
-        "lintFilePatterns": ["apps/cuteness/**/*.ts", "apps/cuteness/**/*.html"]
+        "lintFilePatterns": [
+          "apps/cuteness/**/*.ts",
+          "apps/cuteness/**/*.html"
+        ]
       }
     },
     "test": {
       "executor": "@nrwl/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "outputs": [
+        "{workspaceRoot}/coverage/{projectRoot}"
+      ],
       "options": {
         "jestConfig": "apps/cuteness/jest.config.ts",
         "passWithNoTests": true

@@ -1,0 +1,17 @@
+
+<div *ngIf="adjacencyMatrix.length">
+    has No Isolated Vertices: {{hasNoIsolatedVertices}}
+<div style="overflow-x:auto;">
+    <table mat-table [dataSource]="adjacencyMatrix" class="mat-elevation-z8">
+        <ng-container *ngFor="let column of displayedColumns; index as colIndex" [matColumnDef]="column">
+            <td mat-cell *matCellDef="let row">{{row[colIndex]}}</td>
+        </ng-container>
+
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+</div>
+<cuteness-graph [adjacencyMatrix]="adjacencyMatrix" ></cuteness-graph>
+</div>
+
+<button mat-button (click)="generateMatrix()"> Generate </button>
+<button mat-button > Calc </button>

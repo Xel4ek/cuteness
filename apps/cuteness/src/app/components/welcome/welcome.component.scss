@@ -1,0 +1,12 @@
+:host {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  .centred {
+    text-align: center;
+    flex-grow: 1;
+  }
+  .greeting {
+    font-size: 3rem;
+  }
+}
