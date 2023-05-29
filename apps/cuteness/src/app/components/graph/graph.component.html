@@ -38,9 +38,9 @@
         <svg:g class="edge">
             <svg:path
                     class="line"
+                    [class]="{'line-animate': link.used}"
                     stroke-width="2"
                     marker-end="url(#arrow)"
-                    [attr.stroke]="link.used ? 'green' : ''"
             ></svg:path>
             <svg:text class="edge-label" text-anchor="middle">
                 <textPath
