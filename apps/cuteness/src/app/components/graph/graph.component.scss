@@ -2,14 +2,15 @@
   display: block;
   border: 1px solid rgba(255, 255, 255, 0.23);
 }
-  .line-animate {
-    stroke: green;
-    stroke-dasharray: 17;
-    animation: dash 10s linear infinite;
-  }
 
-  @keyframes dash {
-    to {
-      stroke-dashoffset: 1000;
-    }
+.line-animate {
+  stroke: green;
+  stroke-dasharray: 17;
+  animation: dash 10s linear infinite;
+}
+
+@keyframes dash {
+  from {
+    stroke-dashoffset: 1000;
+  }
 }

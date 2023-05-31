@@ -32,19 +32,25 @@ export class AntColonyComponent {
   protected displayedColumns: string[] = [];
   protected solution?: TsmResult | null;
   protected size = 5;
-  protected methods = [{
-    title: 'Ants',
-    handler: GraphAlgorithms.solveTravelingSalesmanProblem
-  }, {
-    title: 'Genetic',
-    handler: GraphAlgorithms.solveTravelingSalesmanProblemGA
-  }];
+  protected methods = [
+    {
+      title: 'Ants',
+      handler: GraphAlgorithms.solveTravelingSalesmanProblem,
+    },
+    {
+      title: 'Genetic',
+      handler: GraphAlgorithms.solveTravelingSalesmanProblemGA,
+    },
+    {
+      title: 'BranchAndBound',
+      handler: GraphAlgorithms.solveTravelingSalesmanProblemBaB,
+    }
+  ];
 
   constructor() {
     this.selected = this.methods[0].handler;
   }
   protected selected: (graph: number[][]) => TsmResult | null;
-
 
   protected generateMatrix() {
     this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, 0.5);

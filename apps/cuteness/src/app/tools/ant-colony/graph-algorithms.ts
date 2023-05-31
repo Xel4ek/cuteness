@@ -225,5 +225,105 @@ export class GraphAlgorithms {
   }
 
 
+  private static INF = 1e9; // Large constant to represent infinity
+
+  public static solveTravelingSalesmanProblemBaB(graph: number[][]): TsmResult | null {
+    const n = graph.length;
+
+    // Create a deep copy of the graph
+    const graphCopy = JSON.parse(JSON.stringify(graph));
+
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (graphCopy[i][j] === 0) {
+          graphCopy[i][j] = GraphAlgorithms.INF;
+        }
+      }
+    }
+
+    const queue = new PriorityQueue();
+    const initialState = new State([0], 0, GraphAlgorithms.calculateLowerBound(graphCopy, [0]));
+    queue.enqueue(initialState);
+
+    let bestState: State | null = null;
+
+    while (!queue.isEmpty()) {
+      const currentState = queue.dequeue();
+
+      if (currentState) {
+        if (currentState.vertices.length === n && graphCopy[currentState.vertices[currentState.vertices.length - 1]][0] < GraphAlgorithms.INF) {
+          currentState.vertices.push(0); // return to the starting point
+          currentState.distance += graphCopy[currentState.vertices[currentState.vertices.length - 2]][0];
+
+          if (!bestState || currentState.distance < bestState.distance) {
+            bestState = currentState;
+          }
+        } else {
+          for (let i = 0; i < n; i++) {
+            if (!currentState.vertices.includes(i) && graphCopy[currentState.vertices[currentState.vertices.length - 1]][i] < GraphAlgorithms.INF) {
+              const newState = new State([...currentState.vertices, i], currentState.distance + graphCopy[currentState.vertices[currentState.vertices.length - 1]][i], 0);
+              newState.lowerBound = newState.distance + GraphAlgorithms.calculateLowerBound(graphCopy, newState.vertices);
+              queue.enqueue(newState);
+            }
+          }
+        }
+      }
+    }
+
+    if (!bestState || bestState.distance >= GraphAlgorithms.INF) {
+      return null;
+    }
+
+    return {
+      vertices: bestState.vertices,
+      distance: bestState.distance
+    };
+  }
+
+  private static calculateLowerBound(graph: number[][], path: number[]): number {
+    let lowerBound = 0;
+
+    for (let i = 0; i < graph.length; i++) {
+      if (!path.includes(i)) {
+        let minEdge = GraphAlgorithms.INF;
+        for (let j = 0; j < graph.length; j++) {
+          minEdge = Math.min(minEdge, graph[i][j]);
+        }
+        lowerBound += minEdge;
+      }
+    }
+
+    return lowerBound;
+  }
+
 }
 
+
+class State {
+  constructor(
+    public vertices: number[],
+    public distance: number,
+    public lowerBound: number
+  ) {}
+}
+
+class PriorityQueue {
+  private items: State[];
+
+  constructor() {
+    this.items = [];
+  }
+
+  public enqueue(state: State) {
+    this.items.push(state);
+    this.items.sort((a, b) => a.lowerBound - b.lowerBound);
+  }
+
+  public dequeue(): State | undefined {
+    return this.items.shift();
+  }
+
+  public isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+}
