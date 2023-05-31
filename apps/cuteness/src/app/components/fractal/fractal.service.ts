@@ -1,5 +1,5 @@
 import {ElementRef, Injectable} from '@angular/core';
-import {animationFrames, fromEvent, withLatestFrom} from "rxjs";
+import {animationFrames, fromEvent, withLatestFrom} from 'rxjs';
 
 @Injectable({
   providedIn: 'any',

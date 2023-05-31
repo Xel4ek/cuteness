@@ -34,6 +34,10 @@ export class AntColonyComponent {
   protected size = 5;
   protected methods = [
     {
+      title: 'BranchAndBound',
+      handler: GraphAlgorithms.solveTravelingSalesmanProblemBaB,
+    },
+    {
       title: 'Ants',
       handler: GraphAlgorithms.solveTravelingSalesmanProblem,
     },
@@ -41,10 +45,6 @@ export class AntColonyComponent {
       title: 'Genetic',
       handler: GraphAlgorithms.solveTravelingSalesmanProblemGA,
     },
-    {
-      title: 'BranchAndBound',
-      handler: GraphAlgorithms.solveTravelingSalesmanProblemBaB,
-    }
   ];
 
   constructor() {
