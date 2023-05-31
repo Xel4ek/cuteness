@@ -34,12 +34,12 @@ export class AntColonyComponent {
   protected size = 5;
   protected methods = [
     {
-      title: 'BranchAndBound',
-      handler: GraphAlgorithms.solveTravelingSalesmanProblemBaB,
+      title: 'Ants',
+      handler: GraphAlgorithms.solveTravelingSalesmanProblemACO,
     },
     {
-      title: 'Ants',
-      handler: GraphAlgorithms.solveTravelingSalesmanProblem,
+      title: 'BranchAndBound',
+      handler: GraphAlgorithms.solveTravelingSalesmanProblemBaB,
     },
     {
       title: 'Genetic',

@@ -4,30 +4,37 @@ export interface TsmResult {
 }
 
 export class GraphAlgorithms {
-  public static solveTravelingSalesmanProblem(graph: number[][]): TsmResult | null {
+  private static INF = 1e9; // Large constant to represent infinity
+
+  public static solveTravelingSalesmanProblemACO(graph: number[][]): TsmResult | null {
     const antCount = 100;
     const alpha = 1;
-    const beta = 5;
+    const beta = 1;
     const evaporation = 0.5;
     const Q = 100;
-    const maxIteration = 500;
+    const maxIteration = 1000;
+    const checkFrequency = 50;
+    const graphCopy = graph.map((row) =>
+      row.map((item) => (item === 0 ? Infinity : item))
+    );
+
     const initialPheromone = 1 / (graph.length * graph.length);
-    const invalidEdge = 0;
 
-    const distance = (i: number, j: number): number => {
-      if (graph[i][j] !== invalidEdge) {
-        return graph[i][j];
-      } else {
-        return Number.MAX_SAFE_INTEGER;
-      }
-    };
+    const totalWeight = graph.reduce((sum, row) =>
+        sum + row.reduce((rowSum, weight) => rowSum + weight, 0)
+      , 0);
 
-    const pheromone = graph.map((row) => row.map(() => initialPheromone));
+    const pheromone = graph.map((row) =>
+      row.map((weight) => initialPheromone / totalWeight * weight)
+    );
+
+    const distance = (i: number, j: number): number => graphCopy[i][j];
     let bestDistance = Infinity;
     let bestPath: number[] = [];
+    let prevBestPath: number[] = [];
 
     for (let iter = 0; iter < maxIteration; iter++) {
-      const ants = new Array(antCount).fill(null).map(() => ({
+      const ants = Array.from({ length: antCount }, () => ({
         path: [0],
         currentNode: 0,
         cost: 0.0,
@@ -35,22 +42,18 @@ export class GraphAlgorithms {
 
       ants.forEach((ant) => {
         const visitedSet = new Set(ant.path);
-
         while (visitedSet.size < graph.length) {
           const unvisited = graph[ant.currentNode]
             .map((_, idx) => idx)
-            .filter((idx) => graph[ant.currentNode][idx] !== invalidEdge && !visitedSet.has(idx));
+            .filter((idx) => !visitedSet.has(idx) && distance(ant.currentNode, idx));
 
-          if (!unvisited.length) {
-            ant.cost += distance(ant.currentNode, 0);
-            break;
-          }
 
           const denom = unvisited.reduce(
             (acc, dest) =>
               acc +
-              Math.pow(pheromone[ant.currentNode][dest], alpha) * Math.pow(1 / distance(ant.currentNode, dest), beta),
-            0,
+              Math.pow(pheromone[ant.currentNode][dest], alpha) *
+              Math.pow(1 / distance(ant.currentNode, dest), beta),
+            0
           );
 
           const probabilities = unvisited.map((dest) => ({
@@ -62,46 +65,81 @@ export class GraphAlgorithms {
           }));
 
           probabilities.sort((a, b) => b.prob - a.prob);
-          const nextNode = probabilities[0]?.dest;
-          if (nextNode !== undefined) {
+
+          // Добавляем случайный фактор
+          const randomFactor = Math.random(); // Генерируем случайное число от 0 до 1
+          let cumulativeProb = 0;
+          let nextNode;
+
+          for (const { dest, prob } of probabilities) {
+            cumulativeProb += prob;
+            if (cumulativeProb >= randomFactor) {
+              nextNode = dest;
+              break;
+            }
+          }
+
+          if (nextNode) {
             ant.path.push(nextNode);
             ant.currentNode = nextNode;
             visitedSet.add(nextNode);
             ant.cost += distance(ant.path[ant.path.length - 2], ant.currentNode);
+          } else {
+            break;
           }
         }
 
-        if (ant.path) {
-          ant.cost += distance(ant.currentNode, 0); // Возврат в начальную точку
-
-          if (ant.cost < bestDistance && ant.cost < GraphAlgorithms.INF) {
-            // Обновление лучшего пути и расстояния
-            bestDistance = ant.cost;
-            bestPath = [...ant.path, 0];
-          }
+        ant.cost += distance(ant.currentNode, 0);
+        if (ant.cost < bestDistance && ant.path.length === graph.length) {
+          bestDistance = ant.cost;
+          bestPath = [...ant.path, 0];
         }
       });
 
-      // Фильтрация муравьев со значением пути null
-      const legalAnts = ants.filter((ant) => ant.path);
-      if (!legalAnts.length) {
-        return null;
-      } // Если все муравьи имеют невозможные пути, вернуть null
-
-      // Обновление феромонов
-      for (let i = 0; i < graph.length; i++) {
-        for (let j = 0; j < graph.length; j++) {
-          if (i === j || graph[i][j] === invalidEdge) {
-            continue;
-          }
-          pheromone[i][j] = evaporation * pheromone[i][j] + (Q / bestDistance) * (1 - evaporation);
+      if (
+        iter % checkFrequency === 0
+        && prevBestPath.toString() === bestPath.toString()
+      ) {
+        if ( bestDistance < Infinity ) {
+          return {
+            vertices: bestPath,
+            distance: bestDistance,
+          };
         }
       }
+
+      const deltaPheromone = ants.map((ant) => {
+        const antPath = ant.path;
+        const antCost = ant.cost;
+        const antDeltaPheromone = Array.from({ length: graph.length }, () => 0);
+        for (let i = 0; i < antPath.length - 1; i++) {
+          const fromNode = antPath[i];
+          const toNode = antPath[i + 1];
+          antDeltaPheromone[fromNode] += Q / antCost;
+          antDeltaPheromone[toNode] += Q / antCost;
+        }
+
+        return antDeltaPheromone;
+      });
+
+      for (let i = 0; i < graph.length; i++) {
+        for (let j = 0; j < graph.length; j++) {
+          if (i !== j) {
+            pheromone[i][j] =
+              evaporation * pheromone[i][j] + deltaPheromone[i][j];
+          }
+        }
+      }
+
+      prevBestPath = bestPath;
     }
 
-    if (bestPath.length < graph.length + 1) {
+    if (
+      bestPath.length !== graph.length ||
+      isFinite(bestDistance)
+    ) {
       return null;
-    } // Если лучший путь не включает все узлы, вернуть null
+    }
 
     return {
       vertices: bestPath,
@@ -230,8 +268,6 @@ export class GraphAlgorithms {
       distance: bestDistance,
     };
   }
-
-  private static INF = 1e9; // Large constant to represent infinity
 
   public static solveTravelingSalesmanProblemBaB(graph: number[][]): TsmResult | null {
     const n = graph.length;
