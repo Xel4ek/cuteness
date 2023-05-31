@@ -136,7 +136,7 @@ export class GraphAlgorithms {
 
     if (
       bestPath.length !== graph.length ||
-      isFinite(bestDistance)
+      !isFinite(bestDistance)
     ) {
       return null;
     }
@@ -151,23 +151,19 @@ export class GraphAlgorithms {
     const numCities = graph.length;
     const popSize = 200;
     const generations = 1000;
-    const eliteSize = Math.floor(0.1 * popSize);
+    const eliteSize = Math.trunc(0.1 * popSize);
     const mutationRate = 0.01;
-    const invalidEdge = 0;
 
-    const fitness = (path: number[]): number => {
-      let fit = 0;
-      for (let i = 0; i < path.length - 1; i++) {
-        if (graph[path[i]][path[i + 1]] !== invalidEdge) {
-          fit += 1 / graph[path[i]][path[i + 1]];
-        }
-      }
-      if (graph[path[path.length - 1]][path[0]] !== invalidEdge) {
-        fit += 1 / graph[path[path.length - 1]][path[0]];
-      }
+    const graphCopy = graph.map((row) =>
+      row.map((item) => (item === 0 ? Infinity : item))
+    );
 
-      return fit;
-    };
+    const fitness = (path: number[]): number =>
+      path.reduce(
+        (acc, cur, i) => acc + 1 / graphCopy[cur][path[(i + 1) % graphCopy.length]],
+        0
+      );
+
 
     const mutate = (path: number[], mutationRate: number): number[] => {
       const mutatedPath = [...path];
@@ -181,29 +177,20 @@ export class GraphAlgorithms {
       return mutatedPath;
     };
 
-    const crossOver = (parent1: number[], parent2: number[]): number[] => {
-      let child: number[] = [];
-      const geneA = Math.floor(Math.random() * parent1.length);
-      const geneB = Math.floor(Math.random() * parent1.length);
+    const crossOver = (left: number[], right: number[]): number[] => {
+      const prototype = left.slice(0, Math.trunc(Math.random() * left.length));
 
-      const startGene = Math.min(geneA, geneB);
-      const endGene = Math.max(geneA, geneB);
-
-      for (let i = startGene; i < endGene; i++) {
-        child.push(parent1[i]);
-      }
-
-      child = [...child, ...parent2.filter((gene) => !child.includes(gene))];
-
-      return child;
+      return [...prototype, ...right.filter(gene => !prototype.includes(gene))];
     };
 
     let population: number[][] = Array.from({ length: popSize }, () => Array.from({ length: numCities }, (_, i) => i));
+    let noImprovementCount = 0;
+    let bestIndividual: number[] = [];
 
     for (let generation = 0; generation < generations; generation++) {
       const nextPopulation: number[][] = [];
       let bestFitness = -Infinity;
-      let bestIndividual: number[] = [];
+      let previousBestFitness = -Infinity;
 
       // Сортировка популяции по фитнесу
       population.sort((a, b) => fitness(b) - fitness(a));
@@ -215,8 +202,8 @@ export class GraphAlgorithms {
 
       // Кроссовер и мутация
       for (let i = 0; i < popSize - eliteSize; i++) {
-        const parent1 = population[Math.floor(Math.random() * eliteSize)];
-        const parent2 = population[Math.floor(Math.random() * eliteSize)];
+        const parent1 = population[Math.trunc(Math.random() * eliteSize)];
+        const parent2 = population[Math.trunc(Math.random() * eliteSize)];
         let child = crossOver(parent1, parent2);
         child = mutate(child, mutationRate);
         nextPopulation.push(child);
@@ -231,40 +218,31 @@ export class GraphAlgorithms {
 
       population = nextPopulation;
 
-      // Проверка на наличие несоединимых городов в лучшем пути
-      for (let i = 0; i < bestIndividual.length - 1; i++) {
-        const cityA = bestIndividual[i];
-        const cityB = bestIndividual[i + 1];
-        if (graph[cityA][cityB] === invalidEdge) {
-          return null;
+      if (bestFitness > previousBestFitness) {
+        previousBestFitness = bestFitness;
+        noImprovementCount = 0;
+      } else {
+        if (noImprovementCount++ >= 5) {
+          break;
         }
-      }
-
-      // Проверка на возвращение к исходному городу
-      if (graph[bestIndividual[bestIndividual.length - 1]][bestIndividual[0]] === invalidEdge) {
-        return null;
       }
     }
 
-    const calculateTotalDistance = (path: number[]): number => {
-      let total = 0;
-      for (let i = 0; i < path.length - 1; i++) {
-        if (graph[path[i]][path[i + 1]] !== invalidEdge) {
-          total += graph[path[i]][path[i + 1]];
-        }
-      }
-      if (graph[path[path.length - 1]][path[0]] !== invalidEdge) {
-        total += graph[path[path.length - 1]][path[0]];
-      }
+    const calculateTotalDistance = (path: number[]): number =>
+      path.reduce(
+        (acc, cur, i) => acc + graphCopy[cur][path[(i + 1) % graphCopy.length]],
+        0
+      );
 
-      return total;
-    };
 
-    const bestPath = [...population[0], population[0][0]];
-    const bestDistance = calculateTotalDistance(bestPath);
+    const bestDistance = calculateTotalDistance(bestIndividual);
+    if (!isFinite(bestDistance)) {
+      return null;
+    }
+
 
     return {
-      vertices: bestPath,
+      vertices: [...bestIndividual, bestIndividual[0]],
       distance: bestDistance,
     };
   }
