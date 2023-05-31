@@ -10,7 +10,7 @@ export class GraphAlgorithms {
     const beta = 5;
     const evaporation = 0.5;
     const Q = 100;
-    const maxIteration = 150;
+    const maxIteration = 500;
     const initialPheromone = 1 / (graph.length * graph.length);
     const invalidEdge = 0;
 
@@ -42,19 +42,23 @@ export class GraphAlgorithms {
             .filter((idx) => graph[ant.currentNode][idx] !== invalidEdge && !visitedSet.has(idx));
 
           if (!unvisited.length) {
-            // @ts-ignore
-            ant.path = null; // Обозначить невозможный путь как null
+            ant.cost += distance(ant.currentNode, 0);
             break;
           }
 
           const denom = unvisited.reduce(
-            (acc, dest) => acc + Math.pow(pheromone[ant.currentNode][dest], alpha) * Math.pow(1 / distance(ant.currentNode, dest), beta),
-            0
+            (acc, dest) =>
+              acc +
+              Math.pow(pheromone[ant.currentNode][dest], alpha) * Math.pow(1 / distance(ant.currentNode, dest), beta),
+            0,
           );
 
           const probabilities = unvisited.map((dest) => ({
             dest,
-            prob: (Math.pow(pheromone[ant.currentNode][dest], alpha) * Math.pow(1 / distance(ant.currentNode, dest), beta)) / denom,
+            prob:
+              (Math.pow(pheromone[ant.currentNode][dest], alpha) *
+                Math.pow(1 / distance(ant.currentNode, dest), beta)) /
+              denom,
           }));
 
           probabilities.sort((a, b) => b.prob - a.prob);
@@ -70,8 +74,7 @@ export class GraphAlgorithms {
         if (ant.path) {
           ant.cost += distance(ant.currentNode, 0); // Возврат в начальную точку
 
-          // костыль
-          if (ant.cost < bestDistance && ant.cost < 1_000_000) {
+          if (ant.cost < bestDistance && ant.cost < GraphAlgorithms.INF) {
             // Обновление лучшего пути и расстояния
             bestDistance = ant.cost;
             bestPath = [...ant.path, 0];
@@ -81,7 +84,9 @@ export class GraphAlgorithms {
 
       // Фильтрация муравьев со значением пути null
       const legalAnts = ants.filter((ant) => ant.path);
-      if (!legalAnts.length) {return null;} // Если все муравьи имеют невозможные пути, вернуть null
+      if (!legalAnts.length) {
+        return null;
+      } // Если все муравьи имеют невозможные пути, вернуть null
 
       // Обновление феромонов
       for (let i = 0; i < graph.length; i++) {
@@ -94,7 +99,9 @@ export class GraphAlgorithms {
       }
     }
 
-    if (bestPath.length < graph.length + 1) {return null;} // Если лучший путь не включает все узлы, вернуть null
+    if (bestPath.length < graph.length + 1) {
+      return null;
+    } // Если лучший путь не включает все узлы, вернуть null
 
     return {
       vertices: bestPath,
@@ -132,7 +139,7 @@ export class GraphAlgorithms {
           [mutatedPath[i], mutatedPath[j]] = [mutatedPath[j], mutatedPath[i]];
         }
       }
-      
+
       return mutatedPath;
     };
 
@@ -149,11 +156,11 @@ export class GraphAlgorithms {
       }
 
       child = [...child, ...parent2.filter((gene) => !child.includes(gene))];
-      
+
       return child;
     };
 
-    let population: number[][] = Array.from({length: popSize}, () => Array.from({length: numCities}, (_, i) => i));
+    let population: number[][] = Array.from({ length: popSize }, () => Array.from({ length: numCities }, (_, i) => i));
 
     for (let generation = 0; generation < generations; generation++) {
       const nextPopulation: number[][] = [];
@@ -224,22 +231,15 @@ export class GraphAlgorithms {
     };
   }
 
-
   private static INF = 1e9; // Large constant to represent infinity
 
   public static solveTravelingSalesmanProblemBaB(graph: number[][]): TsmResult | null {
     const n = graph.length;
 
     // Create a deep copy of the graph
-    const graphCopy = JSON.parse(JSON.stringify(graph));
-
-    for (let i = 0; i < n; i++) {
-      for (let j = 0; j < n; j++) {
-        if (graphCopy[i][j] === 0) {
-          graphCopy[i][j] = GraphAlgorithms.INF;
-        }
-      }
-    }
+    const graphCopy = graph.map((row) =>
+      row.map((item) => (item === 0 ? GraphAlgorithms.INF : item))
+    );
 
     const queue = new PriorityQueue();
     const initialState = new State([0], 0, GraphAlgorithms.calculateLowerBound(graphCopy, [0]));
@@ -251,7 +251,10 @@ export class GraphAlgorithms {
       const currentState = queue.dequeue();
 
       if (currentState) {
-        if (currentState.vertices.length === n && graphCopy[currentState.vertices[currentState.vertices.length - 1]][0] < GraphAlgorithms.INF) {
+        if (
+          currentState.vertices.length === n &&
+          graphCopy[currentState.vertices[currentState.vertices.length - 1]][0] < GraphAlgorithms.INF
+        ) {
           currentState.vertices.push(0); // return to the starting point
           currentState.distance += graphCopy[currentState.vertices[currentState.vertices.length - 2]][0];
 
@@ -260,9 +263,17 @@ export class GraphAlgorithms {
           }
         } else {
           for (let i = 0; i < n; i++) {
-            if (!currentState.vertices.includes(i) && graphCopy[currentState.vertices[currentState.vertices.length - 1]][i] < GraphAlgorithms.INF) {
-              const newState = new State([...currentState.vertices, i], currentState.distance + graphCopy[currentState.vertices[currentState.vertices.length - 1]][i], 0);
-              newState.lowerBound = newState.distance + GraphAlgorithms.calculateLowerBound(graphCopy, newState.vertices);
+            if (
+              !currentState.vertices.includes(i) &&
+              graphCopy[currentState.vertices[currentState.vertices.length - 1]][i] < GraphAlgorithms.INF
+            ) {
+              const newState = new State(
+                [...currentState.vertices, i],
+                currentState.distance + graphCopy[currentState.vertices[currentState.vertices.length - 1]][i],
+                0,
+              );
+              newState.lowerBound =
+                newState.distance + GraphAlgorithms.calculateLowerBound(graphCopy, newState.vertices);
               queue.enqueue(newState);
             }
           }
@@ -276,7 +287,7 @@ export class GraphAlgorithms {
 
     return {
       vertices: bestState.vertices,
-      distance: bestState.distance
+      distance: bestState.distance,
     };
   }
 
@@ -295,16 +306,10 @@ export class GraphAlgorithms {
 
     return lowerBound;
   }
-
 }
 
-
 class State {
-  constructor(
-    public vertices: number[],
-    public distance: number,
-    public lowerBound: number
-  ) {}
+  constructor(public vertices: number[], public distance: number, public lowerBound: number) {}
 }
 
 class PriorityQueue {
