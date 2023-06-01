@@ -159,14 +159,18 @@ export class GraphAlgorithms {
     );
 
     const fitness = (path: number[]): number => {
+      let infinityCount = 0;
       let total = 0;
       for (let i = 0; i < path.length; i++) {
         const weight = graphCopy[path[i]][path[(i + 1) % path.length]];
-        if (weight === Infinity) { return 0; }  // Penalize paths with impossible steps
+        if (!isFinite(Infinity)) {
+          ++infinityCount;
+        }
+
         total += weight;
       }
 
-      return 1 / total;  // Smaller paths are better, so we invert
+      return 1 / total / (infinityCount + 1);
     };
 
 
