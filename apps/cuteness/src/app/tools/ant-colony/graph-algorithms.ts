@@ -149,8 +149,8 @@ export class GraphAlgorithms {
 
   public static solveTravelingSalesmanProblemGA(graph: number[][]): TsmResult | null {
     const numCities = graph.length;
-    const popSize = 5 * numCities;
-    const generations = Math.trunc(500_000 / numCities );
+    const popSize = 20 * numCities;
+    const generations = Math.trunc(100_000 / numCities );
     const eliteSize = Math.trunc(0.1 * popSize);
     const mutationRate = 0.05;
 
