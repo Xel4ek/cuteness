@@ -149,48 +149,97 @@ export class GraphAlgorithms {
 
   public static solveTravelingSalesmanProblemGA(graph: number[][]): TsmResult | null {
     const numCities = graph.length;
-    const popSize = 200;
-    const generations = 1000;
+    const popSize = 5 * numCities;
+    const generations = Math.trunc(500_000 / numCities );
     const eliteSize = Math.trunc(0.1 * popSize);
-    const mutationRate = 0.01;
+    const mutationRate = 0.05;
 
     const graphCopy = graph.map((row) =>
       row.map((item) => (item === 0 ? Infinity : item))
     );
 
-    const fitness = (path: number[]): number =>
-      path.reduce(
-        (acc, cur, i) => acc + 1 / graphCopy[cur][path[(i + 1) % graphCopy.length]],
-        0
-      );
+    const fitness = (path: number[]): number => {
+      let total = 0;
+      for (let i = 0; i < path.length; i++) {
+        const weight = graphCopy[path[i]][path[(i + 1) % path.length]];
+        if (weight === Infinity) { return 0; }  // Penalize paths with impossible steps
+        total += weight;
+      }
+
+      return 1 / total;  // Smaller paths are better, so we invert
+    };
 
 
     const mutate = (path: number[], mutationRate: number): number[] => {
       const mutatedPath = [...path];
-      for (let i = 0; i < mutatedPath.length; i++) {
-        if (Math.random() < mutationRate) {
-          const j = Math.floor(Math.random() * mutatedPath.length);
+      if (Math.random() < mutationRate) {
+        let i = Math.floor(Math.random() * mutatedPath.length);
+        let j = Math.floor(Math.random() * mutatedPath.length);
+
+        while (i === j) {
+          j = Math.floor(Math.random() * mutatedPath.length);
+        }
+
+        if (j < i) {
+          [i, j] = [j, i];
+        }
+
+        while (i < j) {
           [mutatedPath[i], mutatedPath[j]] = [mutatedPath[j], mutatedPath[i]];
+          i++;
+          j--;
         }
       }
 
       return mutatedPath;
     };
 
-    const crossOver = (left: number[], right: number[]): number[] => {
-      const prototype = left.slice(0, Math.trunc(Math.random() * left.length));
+    const crossOver = (parent1: number[], parent2: number[]): number[] => {
+      const size = parent1.length;
+      const child = new Array(size).fill(-1);
 
-      return [...prototype, ...right.filter(gene => !prototype.includes(gene))];
+      // Select a segment
+      const start = Math.floor(Math.random() * size);
+      const end = start + Math.floor(Math.random() * (size - start));
+
+      // Copy the segment from parent1 to child
+      for (let i = start; i <= end; i++) {
+        child[i] = parent1[i];
+      }
+
+      // Copy remaining elements from parent2 preserving the order
+      for (let i = 0; i < size; i++) {
+        // If parent2 has a gene not in the child
+        if (!child.includes(parent2[i])) {
+          // Place it in the same position as in parent2 into child
+          let j = i;
+          while (child[j] !== -1) {
+            j = parent1.indexOf(parent2[j]);  // Find the position of the conflicting gene in parent1
+          }
+          child[j] = parent2[i];
+        }
+      }
+
+      return child;
     };
 
-    let population: number[][] = Array.from({ length: popSize }, () => Array.from({ length: numCities }, (_, i) => i));
+    let population: number[][] = Array.from({ length: popSize }, () => {
+      const path = Array.from({ length: numCities }, (_, i) => i);
+      for (let i = path.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [path[i], path[j]] = [path[j], path[i]];
+      }
+
+      return path;
+    });
+
     let noImprovementCount = 0;
     let bestIndividual: number[] = [];
+    let previousBestFitness = -Infinity;
 
     for (let generation = 0; generation < generations; generation++) {
       const nextPopulation: number[][] = [];
       let bestFitness = -Infinity;
-      let previousBestFitness = -Infinity;
 
       // Сортировка популяции по фитнесу
       population.sort((a, b) => fitness(b) - fitness(a));
@@ -222,11 +271,14 @@ export class GraphAlgorithms {
         previousBestFitness = bestFitness;
         noImprovementCount = 0;
       } else {
-        if (noImprovementCount++ >= 5) {
-          break;
+        if (bestFitness > 0) {
+          if (noImprovementCount++ >= 5) {
+            break;
+          }
         }
       }
     }
+
 
     const calculateTotalDistance = (path: number[]): number =>
       path.reduce(
