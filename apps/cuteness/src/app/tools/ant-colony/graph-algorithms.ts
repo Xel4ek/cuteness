@@ -242,22 +242,47 @@ export class GraphAlgorithms {
     let previousBestFitness = -Infinity;
 
     for (let generation = 0; generation < generations; generation++) {
-      const nextPopulation: number[][] = [];
       let bestFitness = -Infinity;
 
       // Сортировка популяции по фитнесу
       population.sort((a, b) => fitness(b) - fitness(a));
 
+      const elite = population.slice(0, eliteSize);
       // Добавление элиты в новую популяцию
-      for (let i = 0; i < eliteSize; i++) {
-        nextPopulation.push(population[i]);
-      }
+      const nextPopulation: number[][] = [...elite];
+
+      const rouletteSelection = (population: number[][], fitnessFunc: (path: number[]) => number): [number[], number[]] => {
+        const totalFitness = population.reduce((sum, individual) => sum + fitnessFunc(individual), 0);
+
+        const randomFitness1 = Math.random() * totalFitness;
+        let currentSum = 0;
+        let parent1: number[] | undefined;
+        let parent2: number[] | undefined;
+
+        for (const individual of population) {
+          currentSum += fitnessFunc(individual);
+          if (!parent1 && currentSum >= randomFitness1) {
+            parent1 = individual;
+          } else if (parent1 && !parent2 && currentSum >= randomFitness1) {
+            parent2 = individual;
+            break;
+          }
+        }
+
+        // Если parent2 все еще не установлен, выбираем его случайным образом из оставшихся индивидов
+        if (!parent2) {
+          const remainingIndividuals = population.filter(individual => individual !== parent1);
+          const randomIndex = Math.floor(Math.random() * remainingIndividuals.length);
+          parent2 = remainingIndividuals[randomIndex];
+        }
+
+        return [parent1!, parent2!];
+      };
+
 
       // Кроссовер и мутация
       for (let i = 0; i < popSize - eliteSize; i++) {
-        const parent1 = population[Math.trunc(Math.random() * eliteSize)];
-        const parent2 = population[Math.trunc(Math.random() * eliteSize)];
-        let child = crossOver(parent1, parent2);
+        let child = crossOver(...rouletteSelection(elite, fitness));
         child = mutate(child, mutationRate);
         nextPopulation.push(child);
 

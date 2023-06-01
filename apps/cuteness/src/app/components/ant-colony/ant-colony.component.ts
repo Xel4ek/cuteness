@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { Route } from '@angular/router';
@@ -47,7 +47,9 @@ export class AntColonyComponent {
     },
   ];
 
-  constructor() {
+  constructor(
+    private readonly ngZone: NgZone,
+  ) {
     this.selected = this.methods[0].handler;
   }
   protected selected: (graph: number[][]) => TsmResult | null;
@@ -59,7 +61,9 @@ export class AntColonyComponent {
   }
 
   protected solve() {
-    this.solution = this.selected(this.adjacencyMatrix);
+    this.ngZone.runOutsideAngular( () => {
+      this.solution = this.selected(this.adjacencyMatrix);
+    })
   }
 }
 
