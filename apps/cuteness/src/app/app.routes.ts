@@ -13,7 +13,7 @@ const routes: Route[] = [
     loadChildren: () => import('./components/fractal/fractal.component'),
   },
   {
-    path: 'ant',
+    path: 'tsp',
     loadChildren: () => import('./components/graph-algorithms/graph-algorithms.component'),
   },
   { path: '**', redirectTo: '' },
