@@ -68,8 +68,7 @@ export class GraphHelper {
     for (let i = 0; i < vertices; i++) {
       for (let j = 0; j < vertices; j++) {
         if (i !== j && Math.random() <= fillPercentage) {
-          const weight = Math.random();
-          matrix[i][j] = weight; // Присваивание случайного веса ребрам
+          matrix[i][j] = Math.random(); // Присваивание случайного веса ребрам
         }
       }
     }
