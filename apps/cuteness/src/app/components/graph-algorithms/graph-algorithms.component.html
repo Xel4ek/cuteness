@@ -1,5 +1,5 @@
 <div>
-  {{size}}
+  Size: {{size}}
   <mat-slider
           class="example-margin"
           [max]="20"
@@ -7,6 +7,15 @@
           [step]="1"
   >
     <input matSliderThumb [(ngModel)]="size">
+  </mat-slider>
+  <span>Fill: {{Math.trunc(chance * 100)}} %</span>
+  <mat-slider
+          class="example-margin"
+          [max]="1"
+          [min]="0"
+          [step]=".01"
+  >
+    <input matSliderThumb [(ngModel)]="chance">
   </mat-slider>
 </div>
 <div>

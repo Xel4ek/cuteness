@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AntColonyComponent } from './ant-colony.component';
+import { GraphAlgorithmsComponent } from './graph-algorithms.component';
 
 describe('AntColonyComponent', () => {
-  let component: AntColonyComponent;
-  let fixture: ComponentFixture<AntColonyComponent>;
+  let component: GraphAlgorithmsComponent;
+  let fixture: ComponentFixture<GraphAlgorithmsComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AntColonyComponent],
+      imports: [GraphAlgorithmsComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(AntColonyComponent);
+    fixture = TestBed.createComponent(GraphAlgorithmsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

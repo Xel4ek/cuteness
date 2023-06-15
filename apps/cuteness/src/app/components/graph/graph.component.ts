@@ -77,6 +77,8 @@ export class GraphComponent {
   }
 
   private processLinks() {
+    this.links.forEach(link => link.used = false);
+
     if (this.solution) {
       for (let i = 0; i < this.solution.length - 1; i++) {
         const source = this.solution[i].toString();

@@ -1,9 +1,14 @@
+import { State } from './state';
+import { PriorityQueue } from './priority-queue';
+
 export interface TsmResult {
   vertices: number[];
   distance: number;
 }
 
-export class GraphAlgorithms {
+
+
+export class GraphAlgorithms  {
   private static INF = 1e9; // Large constant to represent infinity
 
   public static solveTravelingSalesmanProblemACO(graph: number[][]): TsmResult | null {
@@ -69,17 +74,17 @@ export class GraphAlgorithms {
           // Добавляем случайный фактор
           const randomFactor = Math.random(); // Генерируем случайное число от 0 до 1
           let cumulativeProb = 0;
-          let nextNode;
+          let nextNode= -1;
 
-          for (const { dest, prob } of probabilities) {
-            cumulativeProb += prob;
+          for (const probabiliti of probabilities) {
+            cumulativeProb += probabiliti.prob;
             if (cumulativeProb >= randomFactor) {
-              nextNode = dest;
+              nextNode = probabiliti.dest;
               break;
             }
           }
 
-          if (nextNode) {
+          if (nextNode !== -1) {
             ant.path.push(nextNode);
             ant.currentNode = nextNode;
             visitedSet.add(nextNode);
@@ -401,29 +406,89 @@ export class GraphAlgorithms {
 
     return lowerBound;
   }
+
+  public static solveTravelingSalesmanProblemElasticNet(graph: number[][]): TsmResult | null {
+    const solver = new ElasticNetSolver(graph);
+    const path = solver.solve();
+
+    if (!path) {
+      return null;
+    }
+
+    const distance = GraphAlgorithms.calculateDistance(path, graph);
+    const vertices = path.map(node => node.id);
+
+    return { vertices, distance };
+  }
+
+  private static calculateDistance(path: Node[], graph: number[][]): number {
+    let distance = 0;
+    for (let i = 0; i < path.length; i++) {
+      const node = path[i];
+      const nextNode = path[i + 1] || path[0];
+      distance += graph[node.id][nextNode.id];
+    }
+
+    return distance;
+  }
+
 }
 
-class State {
-  constructor(public vertices: number[], public distance: number, public lowerBound: number) {}
+export class Node {
+  constructor(public readonly id: number, public x: number, public y: number) {}
 }
 
-class PriorityQueue {
-  private items: State[];
+export class ElasticNetSolver {
+  private nodes: Node[] = [];
+  private readonly learningRate = 0.1;
 
-  constructor() {
-    this.items = [];
+  constructor(private graph: number[][]) {
+    this.initializeNodes();
   }
 
-  public enqueue(state: State) {
-    this.items.push(state);
-    this.items.sort((a, b) => a.lowerBound - b.lowerBound);
+  private initializeNodes() {
+    // Здесь мы инициализируем узлы, располагая их случайным образом.
+    // Вы можете изменить это, если у вас есть более конкретный способ инициализации узлов.
+    for (let i = 0; i < this.graph.length; i++) {
+      this.nodes.push(new Node(i, Math.random(), Math.random()));
+    }
   }
 
-  public dequeue(): State | undefined {
-    return this.items.shift();
+  public solve(): Node[] | null {
+    for (let i = 0; i < 1000; i++) {
+      this.trainOneEpoch();
+    }
+
+    this.nodes.sort((a, b) => a.id - b.id);
+
+    // Проверяем, что каждый узел посещен ровно один раз
+    for (let i = 0; i < this.nodes.length; i++) {
+      if (this.nodes[i].id !== i) {
+        // Не все узлы были посещены ровно один раз
+        return null;
+      }
+    }
+
+    // Добавляем начальный узел в конец пути для возврата к началу
+    this.nodes.push(this.nodes[0]);
+
+    return this.nodes;
   }
 
-  public isEmpty(): boolean {
-    return this.items.length === 0;
+
+  private trainOneEpoch() {
+    // Здесь мы проводим одну эпоху обучения сети. Возможно, вам потребуется настроить этот процесс.
+    this.nodes.forEach(node => {
+      const forces = this.calculateForces(node);
+      node.x += this.learningRate * forces.x;
+      node.y += this.learningRate * forces.y;
+    });
+  }
+
+  private calculateForces(node: Node) {
+    // Этот метод должен вычислить силы, действующие на узел, исходя из его текущего положения.
+    // Для этого вы можете использовать граф, предоставленный в конструкторе.
+    // В данном примере мы просто возвращаем силу 0, но вам потребуется реализовать правильные вычисления.
+    return { x: 0, y: 0 };
   }
 }

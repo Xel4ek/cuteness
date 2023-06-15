@@ -14,7 +14,7 @@ const routes: Route[] = [
   },
   {
     path: 'ant',
-    loadChildren: () => import('./components/ant-colony/ant-colony.component'),
+    loadChildren: () => import('./components/graph-algorithms/graph-algorithms.component'),
   },
   { path: '**', redirectTo: '' },
 ];
