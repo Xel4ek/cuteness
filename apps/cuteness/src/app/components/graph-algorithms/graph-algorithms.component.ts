@@ -95,8 +95,8 @@ export class GraphAlgorithmsComponent {
   protected selected: string;
 
   protected generateMatrix() {
-    // this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
-    this.adjacencyMatrix = matrix;
+    this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
+    // this.adjacencyMatrix = matrix;
     this.displayedColumns = Array.from({ length: this.adjacencyMatrix.length }, (_, i) => i.toString());
     this.solution = undefined;
   }
