@@ -19,8 +19,23 @@
   </mat-slider>
 </div>
 <div>
-  <button mat-button (click)="generateMatrix()" class="button"> Generate</button>
-  <button mat-button (click)="solve()" class="button" *ngIf="adjacencyMatrix.length" [disabled]="processing"> Calc </button>
+  <button
+    mat-button
+    (click)="generateMatrix()"
+    [disabled]="processing"
+    class="button"
+  >
+    Generate
+  </button>
+  <button
+    mat-button
+    *ngIf="adjacencyMatrix.length"
+    (click)="solve()"
+    [disabled]="processing"
+    class="button"
+  >
+    Calc
+  </button>
   <mat-form-field  class="button" *ngIf="adjacencyMatrix.length">
     <mat-label>Choose method</mat-label>
     <mat-select [(value)]="selected">

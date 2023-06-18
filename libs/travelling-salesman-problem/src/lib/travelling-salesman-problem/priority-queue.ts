@@ -1,26 +1,42 @@
-import { State } from './state';
+interface Comparable {
+  compareTo(other: Comparable): number;
+}
 
-class Node {
+export class Node implements Comparable {
+  public vertices: number[];
+  public distance: number;
   public left: Node | null = null;
   public right: Node | null = null;
-  public npl = 0;
+  public npl = 0; // NPL (Null Path Length) is a measure used in leftist heaps
 
-  constructor(public value: State) {}
+  constructor(vertices: number[], distance: number) {
+    this.vertices = vertices;
+    this.distance = distance;
+  }
+
+  public compareTo(other: Node): number {
+    if (this.distance !== other.distance) {
+      return this.distance - other.distance;
+    } else {
+      return other.vertices.length - this.vertices.length;
+    }
+  }
 }
 
 export class PriorityQueue {
-  private root: Node | null = null;
+  public size = 0;
+  public root: Node | null = null;
 
-  public enqueue(state: State): void {
-    const newNode = new Node(state);
-    this.root = this.merge(this.root, newNode);
+  public enqueue(node: Node): void {
+    this.size++;
+    this.root = this.merge(this.root, node);
   }
 
-  public dequeue(): State | undefined {
+  public dequeue(): Node | undefined {
     if (this.isEmpty()) {
       return undefined;
     }
-    const rootState = this.root!.value;
+    const rootState = this.root!;
     this.root = this.merge(this.root!.left, this.root!.right);
 
     return rootState;
@@ -38,7 +54,7 @@ export class PriorityQueue {
       return lhs;
     }
 
-    if (lhs.value.distance > rhs.value.distance) {
+    if (lhs.compareTo(rhs) > 0) {
       [lhs, rhs] = [rhs, lhs];
     }
 

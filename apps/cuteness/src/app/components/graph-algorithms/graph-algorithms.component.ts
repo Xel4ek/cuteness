@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, NgZone } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { Route } from '@angular/router';
@@ -8,7 +8,7 @@ import { MatSliderModule } from '@angular/material/slider';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { GraphAlgorithms, GraphHelper, TsmResult } from '@cuteness/travelling-salesman-problem';
+import { GraphHelper, TsmResult } from '@cuteness/travelling-salesman-problem';
 import { interval, map, Observable, takeWhile } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
@@ -52,7 +52,7 @@ const matrix = [
   templateUrl: './graph-algorithms.component.html',
   styleUrls: ['./graph-algorithms.component.scss'],
 })
-export class GraphAlgorithmsComponent {
+export class GraphAlgorithmsComponent implements OnDestroy {
   protected adjacencyMatrix: number[][] = [];
   protected displayedColumns: string[] = [];
   protected solution?: TsmResult | null;
@@ -72,6 +72,7 @@ export class GraphAlgorithmsComponent {
   protected executionTime?: string;
   protected processing = false;
   protected elapsedTime$: Observable<string>;
+  protected selected: string;
 
   private worker: Worker;
   private startTime = 0;
@@ -92,7 +93,12 @@ export class GraphAlgorithmsComponent {
       takeWhile(() => this.processing),
     );
   }
-  protected selected: string;
+
+
+  public ngOnDestroy(): void {
+    this.worker.terminate();
+  }
+
 
   protected generateMatrix() {
     this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
@@ -116,6 +122,7 @@ export class GraphAlgorithmsComponent {
 
     return `${seconds}.${Math.trunc(milliseconds)} s`;
   }
+
 }
 
 

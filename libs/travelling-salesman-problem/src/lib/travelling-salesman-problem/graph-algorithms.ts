@@ -1,5 +1,4 @@
-import { State } from './state';
-import { PriorityQueue } from './priority-queue';
+import { PriorityQueue, Node } from './priority-queue';
 
 export interface TsmResult {
   vertices: number[];
@@ -9,7 +8,6 @@ export interface TsmResult {
 
 
 export class GraphAlgorithms  {
-  private static INF = 1e9; // Large constant to represent infinity
 
   public static solveTravelingSalesmanProblemACO(graph: number[][]): TsmResult | null {
     const antCount = 100;
@@ -76,10 +74,10 @@ export class GraphAlgorithms  {
           let cumulativeProb = 0;
           let nextNode= -1;
 
-          for (const probabiliti of probabilities) {
-            cumulativeProb += probabiliti.prob;
+          for (const probability of probabilities) {
+            cumulativeProb += probability.prob;
             if (cumulativeProb >= randomFactor) {
-              nextNode = probabiliti.dest;
+              nextNode = probability.dest;
               break;
             }
           }
@@ -338,12 +336,12 @@ export class GraphAlgorithms  {
 
     // Create a deep copy of the graph
     const graphCopy = graph.map((row) =>
-      row.map((item) => (item === 0 ? GraphAlgorithms.INF : item))
+      row.map((item) => (item === 0 ? Infinity : item))
     );
 
     const queue = new PriorityQueue();
     const initialNode = Math.trunc(Math.random() * graph.length);
-    const initialState = new State([initialNode], 0);
+    const initialState = new Node([initialNode], 0);
     queue.enqueue(initialState);
 
     while (!queue.isEmpty()) {
@@ -351,6 +349,8 @@ export class GraphAlgorithms  {
 
       if (currentState) {
         if (currentState.vertices.length === n + 1) {
+          console.log(queue);
+
           return {
             vertices: currentState.vertices,
             distance: currentState.distance,
@@ -359,21 +359,21 @@ export class GraphAlgorithms  {
 
         if (
           currentState.vertices.length === n &&
-          graphCopy[currentState.vertices[currentState.vertices.length - 1]][initialNode] < GraphAlgorithms.INF
+          graphCopy[currentState.vertices[currentState.vertices.length - 1]][initialNode] < Infinity
         ) {
-          const newState = new State(
+          const newState = new Node(
             [...currentState.vertices, initialNode],
             currentState.distance + graphCopy[currentState.vertices[currentState.vertices.length - 1]][initialNode],
           );
 
           queue.enqueue(newState);
-        } else {
+        } else if (currentState.vertices.length < n) {
           for (let i = 0; i < n; i++) {
             if (
               !currentState.vertices.includes(i) &&
-              graphCopy[currentState.vertices[currentState.vertices.length - 1]][i] < GraphAlgorithms.INF
+              graphCopy[currentState.vertices[currentState.vertices.length - 1]][i] < Infinity
             ) {
-              const newState = new State(
+              const newState = new Node(
                 [...currentState.vertices, i],
                 currentState.distance + graphCopy[currentState.vertices[currentState.vertices.length - 1]][i],
               );
@@ -385,22 +385,5 @@ export class GraphAlgorithms  {
     }
 
     return null;
-  }
-
-
-  private static calculateLowerBound(graph: number[][], path: number[]): number {
-    let lowerBound = 0;
-
-    for (let i = 0; i < graph.length; i++) {
-      if (!path.includes(i)) {
-        let minEdge = GraphAlgorithms.INF;
-        for (let j = 0; j < graph.length; j++) {
-          minEdge = Math.min(minEdge, graph[i][j]);
-        }
-        lowerBound += minEdge;
-      }
-    }
-
-    return lowerBound;
   }
 }
