@@ -349,8 +349,6 @@ export class GraphAlgorithms  {
 
       if (currentState) {
         if (currentState.vertices.length === n + 1) {
-          console.log(queue);
-
           return {
             vertices: currentState.vertices,
             distance: currentState.distance,
