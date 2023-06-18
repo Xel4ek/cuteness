@@ -1,0 +1,81 @@
+<mat-tab-group>
+  <mat-tab label="Генерация ключей">
+    <div class="tab-content">
+      <mat-form-field>
+        <textarea
+          matInput
+          cdkTextareaAutosize
+          cdkAutosizeMinRows="15"
+          [(ngModel)]="privateKey"
+          placeholder="Приватный ключ"
+          ></textarea>
+      </mat-form-field>
+      <mat-form-field>
+        <textarea
+          matInput
+          cdkTextareaAutosize
+          cdkAutosizeMinRows="15"
+          [(ngModel)]="publicKey"
+          placeholder="Публичный ключ"
+        ></textarea>
+      </mat-form-field>
+
+    </div>
+    <div class="button-group">
+      <button mat-raised-button color="primary" (click)="generateKeys()">Сгенерировать ключи</button>
+    </div>
+  </mat-tab>
+  <mat-tab label="Шифрование">
+    <div class="tab-content">
+      <mat-form-field>
+        <textarea
+          matInput
+          cdkTextareaAutosize
+          cdkAutosizeMinRows="15"
+          [(ngModel)]="plainText"
+          placeholder="Введите текст для шифрования"
+        ></textarea>
+      </mat-form-field>
+      <mat-form-field>
+        <textarea
+          matInput
+          cdkTextareaAutosize
+          cdkAutosizeMinRows="15"
+          [(ngModel)]="encryptedText"
+          placeholder="Зашифрованный текст"
+          readonly
+        ></textarea>
+      </mat-form-field>
+
+    </div>
+    <div class="button-group">
+      <button mat-raised-button color="primary" (click)="encryptText()">Зашифровать</button>
+    </div>
+  </mat-tab>
+  <mat-tab label="Расшифровка">
+    <div class="tab-content">
+      <mat-form-field>
+        <textarea
+          matInput
+          cdkTextareaAutosize
+          cdkAutosizeMinRows="15"
+          [(ngModel)]="encryptedText"
+          placeholder="Введите зашифрованный текст"
+        ></textarea>
+      </mat-form-field>
+      <mat-form-field>
+        <textarea
+          matInput
+          cdkTextareaAutosize
+          cdkAutosizeMinRows="15"
+          [(ngModel)]="decryptedText"
+          placeholder="Расшифрованный текст"
+        ></textarea>
+      </mat-form-field>
+
+    </div>
+    <div class="button-group">
+      <button mat-raised-button color="primary" (click)="decryptText()">Расшифровать</button>
+    </div>
+  </mat-tab>
+</mat-tab-group>

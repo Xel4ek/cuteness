@@ -8,13 +8,14 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
-    "target": "es2015",
+    "target": "es2020",
     "module": "esnext",
-    "lib": ["es2017", "dom"],
+    "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@cuteness/rsa": ["libs/rsa/src/index.ts"],
       "@cuteness/travelling-salesman-problem": ["libs/travelling-salesman-problem/src/index.ts"]
     }
   },

@@ -16,6 +16,10 @@ const routes: Route[] = [
     path: 'tsp',
     loadChildren: () => import('./components/graph-algorithms/graph-algorithms.component'),
   },
+  {
+    path: 'crypto',
+    loadChildren: () => import('./modules/rsa/rsa.module').then(m => m.RSAModule),
+  },
   { path: '**', redirectTo: '' },
 ];
 

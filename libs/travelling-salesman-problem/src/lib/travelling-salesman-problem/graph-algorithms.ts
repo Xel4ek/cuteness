@@ -345,8 +345,6 @@ export class GraphAlgorithms  {
     const initialState = new State([0], 0, GraphAlgorithms.calculateLowerBound(graphCopy, [0]));
     queue.enqueue(initialState);
 
-    let bestState: State | null = null;
-
     while (!queue.isEmpty()) {
       const currentState = queue.dequeue();
 
@@ -358,38 +356,33 @@ export class GraphAlgorithms  {
           currentState.vertices.push(0); // return to the starting point
           currentState.distance += graphCopy[currentState.vertices[currentState.vertices.length - 2]][0];
 
-          if (!bestState || currentState.distance < bestState.distance) {
-            bestState = currentState;
-          }
-        } else {
-          for (let i = 0; i < n; i++) {
-            if (
-              !currentState.vertices.includes(i) &&
-              graphCopy[currentState.vertices[currentState.vertices.length - 1]][i] < GraphAlgorithms.INF
-            ) {
-              const newState = new State(
-                [...currentState.vertices, i],
-                currentState.distance + graphCopy[currentState.vertices[currentState.vertices.length - 1]][i],
-                0,
-              );
-              newState.lowerBound =
-                newState.distance + GraphAlgorithms.calculateLowerBound(graphCopy, newState.vertices);
-              queue.enqueue(newState);
-            }
+          return {
+            vertices: currentState.vertices,
+            distance: currentState.distance,
+          };
+        }
+
+        for (let i = 0; i < n; i++) {
+          if (
+            !currentState.vertices.includes(i) &&
+            graphCopy[currentState.vertices[currentState.vertices.length - 1]][i] < GraphAlgorithms.INF
+          ) {
+            const newState = new State(
+              [...currentState.vertices, i],
+              currentState.distance + graphCopy[currentState.vertices[currentState.vertices.length - 1]][i],
+              0,
+            );
+            newState.lowerBound =
+              newState.distance + GraphAlgorithms.calculateLowerBound(graphCopy, newState.vertices);
+            queue.enqueue(newState);
           }
         }
       }
     }
 
-    if (!bestState || bestState.distance >= GraphAlgorithms.INF) {
-      return null;
-    }
-
-    return {
-      vertices: bestState.vertices,
-      distance: bestState.distance,
-    };
+    return null;
   }
+
 
   private static calculateLowerBound(graph: number[][], path: number[]): number {
     let lowerBound = 0;
@@ -405,90 +398,5 @@ export class GraphAlgorithms  {
     }
 
     return lowerBound;
-  }
-
-  public static solveTravelingSalesmanProblemElasticNet(graph: number[][]): TsmResult | null {
-    const solver = new ElasticNetSolver(graph);
-    const path = solver.solve();
-
-    if (!path) {
-      return null;
-    }
-
-    const distance = GraphAlgorithms.calculateDistance(path, graph);
-    const vertices = path.map(node => node.id);
-
-    return { vertices, distance };
-  }
-
-  private static calculateDistance(path: Node[], graph: number[][]): number {
-    let distance = 0;
-    for (let i = 0; i < path.length; i++) {
-      const node = path[i];
-      const nextNode = path[i + 1] || path[0];
-      distance += graph[node.id][nextNode.id];
-    }
-
-    return distance;
-  }
-
-}
-
-export class Node {
-  constructor(public readonly id: number, public x: number, public y: number) {}
-}
-
-export class ElasticNetSolver {
-  private nodes: Node[] = [];
-  private readonly learningRate = 0.1;
-
-  constructor(private graph: number[][]) {
-    this.initializeNodes();
-  }
-
-  private initializeNodes() {
-    // Здесь мы инициализируем узлы, располагая их случайным образом.
-    // Вы можете изменить это, если у вас есть более конкретный способ инициализации узлов.
-    for (let i = 0; i < this.graph.length; i++) {
-      this.nodes.push(new Node(i, Math.random(), Math.random()));
-    }
-  }
-
-  public solve(): Node[] | null {
-    for (let i = 0; i < 1000; i++) {
-      this.trainOneEpoch();
-    }
-
-    this.nodes.sort((a, b) => a.id - b.id);
-
-    // Проверяем, что каждый узел посещен ровно один раз
-    for (let i = 0; i < this.nodes.length; i++) {
-      if (this.nodes[i].id !== i) {
-        // Не все узлы были посещены ровно один раз
-        return null;
-      }
-    }
-
-    // Добавляем начальный узел в конец пути для возврата к началу
-    this.nodes.push(this.nodes[0]);
-
-    return this.nodes;
-  }
-
-
-  private trainOneEpoch() {
-    // Здесь мы проводим одну эпоху обучения сети. Возможно, вам потребуется настроить этот процесс.
-    this.nodes.forEach(node => {
-      const forces = this.calculateForces(node);
-      node.x += this.learningRate * forces.x;
-      node.y += this.learningRate * forces.y;
-    });
-  }
-
-  private calculateForces(node: Node) {
-    // Этот метод должен вычислить силы, действующие на узел, исходя из его текущего положения.
-    // Для этого вы можете использовать граф, предоставленный в конструкторе.
-    // В данном примере мы просто возвращаем силу 0, но вам потребуется реализовать правильные вычисления.
-    return { x: 0, y: 0 };
   }
 }

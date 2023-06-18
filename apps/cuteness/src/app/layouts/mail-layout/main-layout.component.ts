@@ -10,7 +10,7 @@ import { filter } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MainLayoutComponent implements OnInit {
-  public modules = ['Fractal', 'TSP'];
+  public modules = ['Fractal', 'TSP', 'Crypto'];
 
   @ViewChild('nav') private sideNav?: MatSidenav;
 
