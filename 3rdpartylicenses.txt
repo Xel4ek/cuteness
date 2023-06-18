@@ -66,6 +66,8 @@ MIT
 @angular/router
 MIT
 
+@cuteness/rsa
+
 @swimlane/ngx-graph
 MIT
 (The MIT License)
