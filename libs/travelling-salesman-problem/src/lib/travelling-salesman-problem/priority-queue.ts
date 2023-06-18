@@ -30,26 +30,26 @@ export class PriorityQueue {
     return this.root === null;
   }
 
-  private merge(node1: Node | null, node2: Node | null): Node | null {
-    if (!node1) {
-      return node2;
+  private merge(lhs: Node | null, rhs: Node | null): Node | null {
+    if (!lhs) {
+      return rhs;
     }
-    if (!node2) {
-      return node1;
-    }
-
-    if (node1.value.lowerBound > node2.value.lowerBound) {
-      [node1, node2] = [node2, node1];
+    if (!rhs) {
+      return lhs;
     }
 
-    node1.right = this.merge(node1.right, node2);
-
-    if (!node1.left || node1.left.npl < node1.right!.npl) {
-      [node1.left, node1.right] = [node1.right, node1.left];
+    if (lhs.value.distance > rhs.value.distance) {
+      [lhs, rhs] = [rhs, lhs];
     }
 
-    node1.npl = node1.right ? node1.right.npl + 1 : 1;
+    lhs.right = this.merge(lhs.right, rhs);
 
-    return node1;
+    if (!lhs.left || lhs.left.npl < lhs.right!.npl) {
+      [lhs.left, lhs.right] = [lhs.right, lhs.left];
+    }
+
+    lhs.npl = lhs.right ? lhs.right.npl + 1 : 1;
+
+    return lhs;
   }
 }

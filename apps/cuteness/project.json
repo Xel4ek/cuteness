@@ -7,27 +7,18 @@
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:browser",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/cuteness",
         "index": "apps/cuteness/src/index.html",
         "main": "apps/cuteness/src/main.ts",
-        "polyfills": [
-          "zone.js"
-        ],
+        "polyfills": ["zone.js"],
         "tsConfig": "apps/cuteness/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
-        "assets": [
-          "apps/cuteness/src/favicon.ico",
-          "apps/cuteness/src/assets"
-        ],
-        "styles": [
-          "@angular/material/prebuilt-themes/purple-green.css",
-          "apps/cuteness/src/styles.scss"
-        ],
-        "scripts": []
+        "assets": ["apps/cuteness/src/favicon.ico", "apps/cuteness/src/assets"],
+        "styles": ["@angular/material/prebuilt-themes/purple-green.css", "apps/cuteness/src/styles.scss"],
+        "scripts": [],
+        "webWorkerTsConfig": "apps/cuteness/tsconfig.worker.json"
       },
       "configurations": {
         "production": {
@@ -35,7 +26,7 @@
             {
               "type": "initial",
               "maximumWarning": "500kb",
-              "maximumError": "1mb"
+              "maximumError": "5mb"
             },
             {
               "type": "anyComponentStyle",
@@ -76,24 +67,18 @@
     },
     "lint": {
       "executor": "@nx/linter:eslint",
-      "outputs": [
-        "{options.outputFile}"
-      ],
+      "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": [
-          "apps/cuteness/**/*.ts",
-          "apps/cuteness/**/*.html"
-        ]
+        "lintFilePatterns": ["apps/cuteness/**/*.ts", "apps/cuteness/**/*.html"]
       }
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/cuteness/jest.config.ts",
-        "passWithNoTests": true
+        "passWithNoTests": true,
+        "webWorkerTsConfig": "apps/cuteness/tsconfig.worker.json"
       },
       "configurations": {
         "ci": {

@@ -342,39 +342,43 @@ export class GraphAlgorithms  {
     );
 
     const queue = new PriorityQueue();
-    const initialState = new State([0], 0, GraphAlgorithms.calculateLowerBound(graphCopy, [0]));
+    const initialNode = Math.trunc(Math.random() * graph.length);
+    const initialState = new State([initialNode], 0);
     queue.enqueue(initialState);
 
     while (!queue.isEmpty()) {
       const currentState = queue.dequeue();
 
       if (currentState) {
-        if (
-          currentState.vertices.length === n &&
-          graphCopy[currentState.vertices[currentState.vertices.length - 1]][0] < GraphAlgorithms.INF
-        ) {
-          currentState.vertices.push(0); // return to the starting point
-          currentState.distance += graphCopy[currentState.vertices[currentState.vertices.length - 2]][0];
-
+        if (currentState.vertices.length === n + 1) {
           return {
             vertices: currentState.vertices,
             distance: currentState.distance,
           };
         }
 
-        for (let i = 0; i < n; i++) {
-          if (
-            !currentState.vertices.includes(i) &&
-            graphCopy[currentState.vertices[currentState.vertices.length - 1]][i] < GraphAlgorithms.INF
-          ) {
-            const newState = new State(
-              [...currentState.vertices, i],
-              currentState.distance + graphCopy[currentState.vertices[currentState.vertices.length - 1]][i],
-              0,
-            );
-            newState.lowerBound =
-              newState.distance + GraphAlgorithms.calculateLowerBound(graphCopy, newState.vertices);
-            queue.enqueue(newState);
+        if (
+          currentState.vertices.length === n &&
+          graphCopy[currentState.vertices[currentState.vertices.length - 1]][initialNode] < GraphAlgorithms.INF
+        ) {
+          const newState = new State(
+            [...currentState.vertices, initialNode],
+            currentState.distance + graphCopy[currentState.vertices[currentState.vertices.length - 1]][initialNode],
+          );
+
+          queue.enqueue(newState);
+        } else {
+          for (let i = 0; i < n; i++) {
+            if (
+              !currentState.vertices.includes(i) &&
+              graphCopy[currentState.vertices[currentState.vertices.length - 1]][i] < GraphAlgorithms.INF
+            ) {
+              const newState = new State(
+                [...currentState.vertices, i],
+                currentState.distance + graphCopy[currentState.vertices[currentState.vertices.length - 1]][i],
+              );
+              queue.enqueue(newState);
+            }
           }
         }
       }

@@ -20,22 +20,24 @@
 </div>
 <div>
   <button mat-button (click)="generateMatrix()" class="button"> Generate</button>
-  <button mat-button (click)="solve()" class="button" *ngIf="adjacencyMatrix.length"> Calc </button>
+  <button mat-button (click)="solve()" class="button" *ngIf="adjacencyMatrix.length" [disabled]="processing"> Calc </button>
   <mat-form-field  class="button" *ngIf="adjacencyMatrix.length">
     <mat-label>Choose method</mat-label>
     <mat-select [(value)]="selected">
-      <mat-option *ngFor="let method of methods" [value]="method.handler">
+      <mat-option *ngFor="let method of methods" [value]="method.title">
         {{method.title}}
       </mat-option>
     </mat-select>
   </mat-form-field>
-
+  <div *ngIf="processing" class="info" >
+    <mat-spinner class="spinner"></mat-spinner> {{ elapsedTime$ | async }}
+  </div>
   <div *ngIf="solution" >
     <div class="info">
-      ({{executionTime}}) Distance: {{solution.distance | number: '.0-2'}}
+      ({{ executionTime }}) Distance: {{ solution.distance | number: '.0-2' }}
     </div>
     <div class="info">
-      {{solution.vertices.join(' ➢ ')}}
+      {{ solution.vertices.join(' ➢ ') }}
     </div>
   </div>
 </div>
