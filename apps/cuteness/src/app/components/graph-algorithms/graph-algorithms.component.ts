@@ -61,24 +61,32 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   protected methods = [
     {
       title: 'Ants',
+      method: 'Ants',
     },
     {
       title: 'BranchAndBound',
+      method: 'BranchAndBound32',
     },
     {
       title: 'Genetic',
+      method: 'Genetic',
     },
+    // {
+    //   title: 'BranchAndBound32',
+    //   method: 'BranchAndBound32',
+    // }
   ];
   protected executionTime?: string;
   protected processing = false;
   protected elapsedTime$: Observable<string>;
   protected selected: string;
 
+
   private worker: Worker;
   private startTime = 0;
 
   constructor(private readonly changeDetectorRef: ChangeDetectorRef) {
-    this.selected = this.methods[0].title;
+    this.selected = this.methods[0].method;
     this.worker = new Worker(new URL('./tsp.worker.ts', import.meta.url));
 
     this.worker.onmessage = ({ data }) => {

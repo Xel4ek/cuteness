@@ -1,17 +1,35 @@
-interface Comparable {
-  compareTo(other: Comparable): number;
+interface Comparable<T> {
+  left: T | null;
+  right: T | null;
+  npl: number;
+  compareTo(other: Comparable<T>): number;
 }
 
-export class Node implements Comparable {
-  public vertices: number[];
-  public distance: number;
+export class Node32 implements Comparable<Node32> {
+  public left: Node32 | null = null;
+  public right: Node32 | null = null;
+  public npl = 0;
+
+
+  constructor(public readonly route: string, public readonly distance: number, public readonly bitmask: number) {
+  }
+
+  public compareTo(other: Node32): number {
+    if (this.distance !== other.distance) {
+      return this.distance - other.distance;
+    } else {
+      return other.route.length - this.route.length;
+    }
+  }
+}
+
+export class Node implements Comparable<Node> {
   public left: Node | null = null;
   public right: Node | null = null;
+
   public npl = 0; // NPL (Null Path Length) is a measure used in leftist heaps
 
-  constructor(vertices: number[], distance: number) {
-    this.vertices = vertices;
-    this.distance = distance;
+  constructor(public readonly vertices: number[], public readonly distance: number) {
   }
 
   public compareTo(other: Node): number {
@@ -23,16 +41,16 @@ export class Node implements Comparable {
   }
 }
 
-export class PriorityQueue {
+export class PriorityQueue<T extends Comparable<T> > {
   public size = 0;
-  public root: Node | null = null;
+  public root: T | null = null;
 
-  public enqueue(node: Node): void {
+  public enqueue(node: T): void {
     this.size++;
     this.root = this.merge(this.root, node);
   }
 
-  public dequeue(): Node | undefined {
+  public dequeue(): T | undefined {
     if (this.isEmpty()) {
       return undefined;
     }
@@ -46,7 +64,7 @@ export class PriorityQueue {
     return this.root === null;
   }
 
-  private merge(lhs: Node | null, rhs: Node | null): Node | null {
+  private merge(lhs: T | null, rhs: T | null): T | null {
     if (!lhs) {
       return rhs;
     }

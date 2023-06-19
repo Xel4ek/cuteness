@@ -1,8 +1,9 @@
-import { PriorityQueue, Node } from './priority-queue';
+import { PriorityQueue, Node, Node32 } from './priority-queue';
 
 export interface TsmResult {
   vertices: number[];
   distance: number;
+  paths: number;
 }
 
 
@@ -15,7 +16,7 @@ export class GraphAlgorithms  {
     const beta = 1;
     const evaporation = 0.5;
     const Q = 100;
-    const maxIteration = 1000;
+    const maxIteration = 10000;
     const checkFrequency = 50;
     const graphCopy = graph.map((row) =>
       row.map((item) => (item === 0 ? Infinity : item))
@@ -35,6 +36,7 @@ export class GraphAlgorithms  {
     let bestDistance = Infinity;
     let bestPath: number[] = [];
     let prevBestPath: number[] = [];
+    let paths = 0;
 
     for (let iter = 0; iter < maxIteration; iter++) {
       const ants = Array.from({ length: antCount }, () => ({
@@ -44,6 +46,7 @@ export class GraphAlgorithms  {
       }));
 
       ants.forEach((ant) => {
+        paths++;
         const visitedSet = new Set(ant.path);
         while (visitedSet.size < graph.length) {
           const unvisited = graph[ant.currentNode]
@@ -107,6 +110,7 @@ export class GraphAlgorithms  {
           return {
             vertices: bestPath,
             distance: bestDistance,
+            paths,
           };
         }
       }
@@ -147,6 +151,7 @@ export class GraphAlgorithms  {
     return {
       vertices: bestPath,
       distance: bestDistance,
+      paths,
     };
   }
 
@@ -243,12 +248,14 @@ export class GraphAlgorithms  {
     let noImprovementCount = 0;
     let bestIndividual: number[] = [];
     let previousBestFitness = -Infinity;
-
+    let paths = 0;
     for (let generation = 0; generation < generations; generation++) {
       let bestFitness = -Infinity;
 
       // Сортировка популяции по фитнесу
       population.sort((a, b) => fitness(b) - fitness(a));
+
+      paths += population.length;
 
       const elite = population.slice(0, eliteSize);
       // Добавление элиты в новую популяцию
@@ -328,6 +335,7 @@ export class GraphAlgorithms  {
     return {
       vertices: [...bestIndividual, bestIndividual[0]],
       distance: bestDistance,
+      paths
     };
   }
 
@@ -339,7 +347,7 @@ export class GraphAlgorithms  {
       row.map((item) => (item === 0 ? Infinity : item))
     );
 
-    const queue = new PriorityQueue();
+    const queue = new PriorityQueue<Node>();
     const initialNode = Math.trunc(Math.random() * graph.length);
     const initialState = new Node([initialNode], 0);
     queue.enqueue(initialState);
@@ -349,9 +357,11 @@ export class GraphAlgorithms  {
 
       if (currentState) {
         if (currentState.vertices.length === n + 1) {
+
           return {
             vertices: currentState.vertices,
             distance: currentState.distance,
+            paths: queue.size,
           };
         }
 
@@ -375,6 +385,59 @@ export class GraphAlgorithms  {
                 [...currentState.vertices, i],
                 currentState.distance + graphCopy[currentState.vertices[currentState.vertices.length - 1]][i],
               );
+              queue.enqueue(newState);
+            }
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  public static solveTravelingSalesmanProblemBaB32(graph: number[][]): TsmResult | null {
+    const n = graph.length;
+
+    const graphCopy = graph.map((row) =>
+      row.map((item) => (item === 0 ? Infinity : item))
+    );
+
+    const queue = new PriorityQueue<Node32>();
+    const initialNode = Math.trunc(Math.random() * graph.length);
+    const initialState = new Node32(initialNode.toString(32), 0, 1 << initialNode);
+    queue.enqueue(initialState);
+
+    while (!queue.isEmpty()) {
+      const currentState = queue.dequeue();
+
+      if (currentState) {
+        if (currentState.route.length === n + 1) {
+
+          return {
+            vertices: currentState.route.split('').map(char => parseInt(char, 32)),
+            distance: currentState.distance,
+            paths: queue.size,
+          };
+        }
+
+        if (currentState.route.length === n) {
+          const lastNode = parseInt(currentState.route.charAt(currentState.route.length - 1), 32);
+          if (graphCopy[lastNode][initialNode] < Infinity) {
+            const newState = new Node32(
+              currentState.route + initialNode.toString(32),
+              currentState.distance + graphCopy[lastNode][initialNode],
+              currentState.bitmask | (1 << initialNode)
+            );
+
+            queue.enqueue(newState);
+          }
+        } else {
+          for (let i = 0; i < n; i++) {
+            const lastNode = parseInt(currentState.route.charAt(currentState.route.length - 1), 32);
+            if (!(currentState.bitmask & (1 << i)) && graphCopy[lastNode][i] < Infinity) {
+              const newRoute = currentState.route + i.toString(32);
+              const newDistance = currentState.distance + graphCopy[lastNode][i];
+              const newState = new Node32(newRoute, newDistance, currentState.bitmask | (1 << i));
               queue.enqueue(newState);
             }
           }

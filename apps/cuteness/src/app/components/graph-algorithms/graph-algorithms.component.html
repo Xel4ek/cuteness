@@ -39,7 +39,7 @@
   <mat-form-field  class="button" *ngIf="adjacencyMatrix.length">
     <mat-label>Choose method</mat-label>
     <mat-select [(value)]="selected">
-      <mat-option *ngFor="let method of methods" [value]="method.title">
+      <mat-option *ngFor="let method of methods" [value]="method.method">
         {{method.title}}
       </mat-option>
     </mat-select>
@@ -49,7 +49,7 @@
   </div>
   <div *ngIf="solution" >
     <div class="info">
-      ({{ executionTime }}) Distance: {{ solution.distance | number: '.0-2' }}
+      [{{ solution.paths | number }}] ({{ executionTime }}) Distance: {{ solution.distance | number: '.0-2' }}
     </div>
     <div class="info">
       {{ solution.vertices.join(' ➢ ') }}
