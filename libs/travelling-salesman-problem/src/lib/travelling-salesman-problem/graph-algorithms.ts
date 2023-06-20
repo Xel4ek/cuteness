@@ -461,25 +461,36 @@ export class GraphAlgorithms {
           return null;
         }
 
+        const vertices = restorePath(candidate.path);
+        if (vertices.length !== graph.length + 1) {
+          continue;
+        }
+
         return {
-          vertices: restorePath(candidate.path),
+          vertices,
           distance: candidate.lowerBound,
           paths,
         }
       } else {
-        const {
-          penalty,
-          maxPenaltyPos: [row, col],
-        } = candidate.calculatePenalties();
 
-        const cutGraph = candidate.transform(row, col);
-        queue.enqueue(cutGraph);
+          const {
+            penalty,
+            maxPenaltyPos: [row, col],
+          } = candidate.calculatePenalties();
 
-        if (penalty !== Infinity) {
-          candidate.blockPath(row, col);
-          candidate.lowerBound += penalty;
-          queue.enqueue(candidate);
-        }
+          if (penalty === -1) {
+            return  null;
+          }
+
+          const cutGraph = candidate.transform(row, col);
+          queue.enqueue(cutGraph);
+
+          if (penalty !== Infinity) {
+            candidate.blockPath(row, col);
+            candidate.lowerBound += penalty;
+            candidate.dryReduceMatrix();
+            queue.enqueue(candidate);
+          }
       }
       paths++;
     }

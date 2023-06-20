@@ -1,6 +1,6 @@
 export class Graph {
   constructor(
-    public readonly matrix: number[][],
+    public matrix: number[][],
     public lowerBound = 0,
     public readonly indexes: {
       rows: number[];
@@ -19,6 +19,11 @@ export class Graph {
     if (curCol !== -1 && curRow !== -1) {
       this.matrix[curRow][curCol] = Infinity;
     }
+  }
+
+  public dryReduceMatrix() {
+    const { matrix } = this.reduceMatrix(this.matrix);
+    this.matrix = matrix;
   }
 
   public transform(row: number, col: number) {
@@ -54,7 +59,7 @@ export class Graph {
 
   public calculatePenalties() {
     let maxPenalty = -Infinity;
-    let maxPenaltyPos: [number, number]  = [-1, -1];
+    let maxPenaltyPos: [number, number] | undefined;
     const penalties: number[][] = Array(this.matrix.length).fill(0).map(() => Array(this.matrix.length).fill(0));
 
     for (let i = 0; i < this.matrix.length; i++) {
@@ -71,6 +76,10 @@ export class Graph {
           }
         }
       }
+    }
+
+    if(!maxPenaltyPos) {
+      return { penalty: -1, maxPenaltyPos: [-1, -1]}
     }
 
     return { penalty: maxPenalty, maxPenaltyPos: [this.indexes.rows[maxPenaltyPos[0]], this.indexes.cols[maxPenaltyPos[1]]] };
