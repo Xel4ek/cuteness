@@ -1,4 +1,4 @@
-import { PriorityQueue, Node, Node32 } from './priority-queue';
+import { PriorityQueue, Node, Node32, NodeLittle } from './priority-queue';
 
 export interface TsmResult {
   vertices: number[];
@@ -447,4 +447,238 @@ export class GraphAlgorithms  {
 
     return null;
   }
+
+  public static solveTravelingSalesmanProblemLittle(graph: number[][]): TsmResult | null {
+    let indices = Array.from({ length: graph.length }, (_, i) => i);
+
+    function rowReduction(matrix: number[][]) {
+      const redux: number[] = [];
+
+      const newMatrix = matrix.map((row) => {
+        const min = Math.min(...row);
+        redux.push(min);
+
+        return row.map((val) => (val !== Infinity ? val - min : val));
+      });
+
+      return {
+        redux,
+        matrix: newMatrix
+      };
+    }
+
+    function columnReduction(matrix: number[][]) {
+      const transposed = matrix[0].map((_, i) => matrix.map((row) => row[i]));
+      const reducedTransposed = rowReduction(transposed);
+
+      const reducedMatrix = reducedTransposed.matrix[0].map((_, i) => reducedTransposed.matrix.map((row) => row[i]));
+
+      return {
+        redux: reducedTransposed.redux,
+        matrix: reducedMatrix,
+      };
+    }
+
+    function reduceMatrix(matrix: number[][]) {
+      const rowReduced = rowReduction(matrix);
+      const colReduced = columnReduction(rowReduced.matrix);
+
+      return {
+        score: [...rowReduced.redux, ...colReduced.redux].reduce((acc, cur) => acc + cur, 0),
+        matrix: colReduced.matrix,
+      }
+    }
+
+    function calculatePenalties(matrix: number[][]) {
+      let maxPenalty = -Infinity;
+      let maxPenaltyPos: [number, number] | null = null;
+      const penalties: number[][] = Array(matrix.length).fill(0).map(() => Array(matrix.length).fill(0));
+
+      for (let i = 0; i < matrix.length; i++) {
+        for (let j = 0; j < matrix[i].length; j++) {
+          if (matrix[i][j] === 0) {
+            const rowMin = Math.min(...matrix[i].filter((val, idx) => idx !== j && val !== Infinity));
+            const colMin = Math.min(...matrix.map((row, idx) => (idx !== i && row[j] !== Infinity ? row[j] : Infinity)));
+
+            penalties[i][j] = rowMin + colMin;
+
+            if (penalties[i][j] > maxPenalty) {
+              maxPenalty = penalties[i][j];
+              maxPenaltyPos = [i, j];
+            }
+          }
+        }
+      }
+
+      return { penalties, maxPenaltyPos };
+    }
+
+    function restoreOriginalIndices(indices: number[][]): number[][] {
+      const originalIndices = indices.map(([row, col]) => [row, col]);
+      const removedIndices = indices.slice(); // make a copy of the array
+
+      for (let i = 0; i < indices.length; i++) {
+        for (let j = i + 1; j < indices.length; j++) {
+          if (originalIndices[j][0] >= removedIndices[i][0]) {
+            originalIndices[j][0]++;
+          }
+          if (originalIndices[j][1] >= removedIndices[i][1]) {
+            originalIndices[j][1]++;
+          }
+        }
+      }
+
+      return originalIndices;
+    }
+
+    function branchAndBound(res: {score: number, matrix: number[][]}) {
+      const queue = new PriorityQueue<NodeLittle>();
+
+      const initialNode = new NodeLittle(res.matrix, [], res.score);
+      queue.enqueue(initialNode);
+
+      let best: {
+        cost: number;
+        path: number[];
+      } = {
+        cost: Infinity,
+        path: [],
+      };
+
+      while (!queue.isEmpty()) {
+        const node = queue.dequeue()!;
+
+        if (node.path.length === res.matrix.length - 1) {
+          console.log(node);
+          if (node.distance < best.cost) {
+            console.log(node);
+            console.log(restoreOriginalIndices(node.path));
+            break;
+            // best = {
+            //   cost: node.distance,
+            //   path: node.path,
+            // };
+          }
+          break;
+        } else {
+          const { penalties, maxPenaltyPos } = calculatePenalties(node.graph);
+          // console.log(penalties, maxPenaltyPos);
+          if (!maxPenaltyPos) {
+            continue;
+          }
+          const [row, col] = maxPenaltyPos;
+
+
+          const exclude = [...node.graph.map(row => [...row])];
+          exclude[col][row] = Infinity;
+          const include = exclude.filter((_, idx) => idx !== row).map((r) => r.filter((_, idx) => idx !== col));
+
+          const data = reduceMatrix(include);
+          const newPath: [number, number][] = [...node.path, [row, col]];
+
+          const includeNode = new NodeLittle(data.matrix, newPath, node.distance + data.score);
+
+          if (penalties[row][col] !== Infinity) {
+            const excludeNode = new NodeLittle(node.graph, node.path, node.distance + penalties[row][col]);
+            queue.enqueue(excludeNode);
+
+          }
+
+          queue.enqueue(includeNode);
+        }
+      }
+
+      return best;
+    }
+
+    function getZeroCoefficients(matrix: number[][]): number[][] {
+      const coefficients = matrix.map((row) => [...row]);
+      for (let i = 0; i < matrix.length; i++) {
+        for (let j = 0; j < matrix[i].length; j++) {
+          if (matrix[i][j] === 0) {
+            const rowMin = Math.min(...matrix[i].filter((_, index) => index !== j));
+            const colMin = Math.min(...matrix.map((row) => row[j]).filter((_, index) => index !== i));
+            coefficients[i][j] = rowMin + colMin;
+          } else {
+            coefficients[i][j] = -1;
+          }
+        }
+      }
+
+      return coefficients;
+    }
+
+    function selectZero(coefficients: number[][], matrix: number[][]): [number, number] {
+      let maxK = -1;
+      let selectedZero: [number, number] | null = null;
+
+      for (let row = 0; row < coefficients.length; row++) {
+        for (let col = 0; col < coefficients[row].length; col++) {
+          const k = coefficients[row][col];
+          if (k > maxK && matrix[row][col] !== Infinity) {
+            maxK = k;
+            selectedZero = [row, col];
+          }
+        }
+      }
+      if (!selectedZero) {
+        throw new Error('No zero selected');
+      }
+
+      return selectedZero;
+    }
+
+    function deleteRowAndColumn(matrix: number[][], row: number, col: number): number[][] {
+      matrix = matrix.filter((_, i) => i !== row).map(row => row.filter((_, i) => i !== col));
+      indices = indices.filter(index => index !== row && index !== col);
+
+      return matrix;
+    }
+
+    function removeReturningPaths(matrix: number[][], start: number, end: number): number[][] {
+      matrix[end][start] = Infinity;
+
+      return matrix;
+    }
+
+    const graphCopy = graph.map((row) =>
+      row.map((item) => (item === 0 ? Infinity : item))
+    );
+
+    const res = reduceMatrix(graphCopy);
+    // const queue = new PriorityQueue<NodeLittle>();
+    // queue.enqueue(new NodeLittle(res.matrix, [], res.score))
+
+    // const reducedGraph = reduceMatrix(graph);
+
+    const result = branchAndBound(res);
+
+    console.log(result);
+    // const path: number[][] = [];
+    // let matrixCopy: number[][] = graphCopy;
+    //
+    // while (matrixCopy.length > 2) {
+    //   const coefficients = getZeroCoefficients(matrixCopy);
+    //   const [row, col] = selectZero(coefficients, matrixCopy);
+    //   console.log(row,col)
+    //   const start = indices[row];
+    //   const end = indices[col];
+    //
+    //   path.push([start, end]);
+    //   matrixCopy = deleteRowAndColumn(matrixCopy, row, col);
+    //   graphCopy = removeReturningPaths(graphCopy, start, end);
+    // }
+    //
+    // const lastTwoVertices = indices;
+    // path.push(lastTwoVertices);
+
+    // здесь вы можете посчитать общую длину пути и другую необходимую информацию
+
+    return {
+      vertices: [],
+      distance: 1, // расстояние замените на реальное значение
+      paths: 1, // количество путей замените на реальное значение
+    };
+  }
+
 }

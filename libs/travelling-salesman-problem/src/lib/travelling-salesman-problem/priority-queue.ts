@@ -5,6 +5,20 @@ interface Comparable<T> {
   compareTo(other: Comparable<T>): number;
 }
 
+export class NodeLittle implements Comparable<NodeLittle> {
+  public left: NodeLittle | null = null;
+  public right: NodeLittle | null = null;
+  public npl  = 0;
+
+  constructor(public readonly graph: number[][], public readonly path: [number, number][], public readonly distance: number) {
+  }
+
+  public compareTo(other: NodeLittle): number {
+    return this.distance - other.distance;
+  }
+
+}
+
 export class Node32 implements Comparable<Node32> {
   public left: Node32 | null = null;
   public right: Node32 | null = null;
@@ -56,6 +70,8 @@ export class PriorityQueue<T extends Comparable<T> > {
     }
     const rootState = this.root!;
     this.root = this.merge(this.root!.left, this.root!.right);
+    rootState.left = null;
+    rootState.right = null;
 
     return rootState;
   }

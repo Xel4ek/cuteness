@@ -34,6 +34,13 @@ const matrix = [
   [69, 0, 99, 6, 0, 63, 0, 77, 0, 17, 0, 0, 0, 34, 66, 0, 93, 0, 0, 0],
   [0, 0, 24, 0, 51, 0, 37, 17, 0, 0, 81, 0, 0, 0, 0, 94, 0, 9, 0, 0]
 ];
+const matrix2 = [
+  [0, 20, 18, 12, 8,],
+  [5, 0, 14, 7, 11,],
+  [12, 18, 0, 6, 11],
+  [11, 17, 11, 0, 12,],
+  [5, 5, 5, 5, 0]
+]
 
 @Component({
   selector: 'cuteness-graph-algorithms',
@@ -60,6 +67,10 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   protected chance = 0.5;
   protected methods = [
     {
+      title: 'Little',
+      method: 'Little',
+    },
+    {
       title: 'Ants',
       method: 'Ants',
     },
@@ -71,6 +82,7 @@ export class GraphAlgorithmsComponent implements OnDestroy {
       title: 'Genetic',
       method: 'Genetic',
     },
+
     // {
     //   title: 'BranchAndBound32',
     //   method: 'BranchAndBound32',
@@ -90,6 +102,7 @@ export class GraphAlgorithmsComponent implements OnDestroy {
     this.worker = new Worker(new URL('./tsp.worker.ts', import.meta.url));
 
     this.worker.onmessage = ({ data }) => {
+      console.log(data);
       this.processing = false;
       this.solution = data.solution;
       this.changeDetectorRef.detectChanges();
@@ -109,8 +122,8 @@ export class GraphAlgorithmsComponent implements OnDestroy {
 
 
   protected generateMatrix() {
-    this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
-    // this.adjacencyMatrix = matrix;
+    // this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
+    this.adjacencyMatrix = matrix2;
     this.displayedColumns = Array.from({ length: this.adjacencyMatrix.length }, (_, i) => i.toString());
     this.solution = undefined;
   }
