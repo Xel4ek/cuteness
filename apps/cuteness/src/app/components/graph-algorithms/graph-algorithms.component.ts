@@ -82,11 +82,6 @@ export class GraphAlgorithmsComponent implements OnDestroy {
       title: 'Genetic',
       method: 'Genetic',
     },
-
-    // {
-    //   title: 'BranchAndBound32',
-    //   method: 'BranchAndBound32',
-    // }
   ];
   protected executionTime?: string;
   protected processing = false;
@@ -102,7 +97,6 @@ export class GraphAlgorithmsComponent implements OnDestroy {
     this.worker = new Worker(new URL('./tsp.worker.ts', import.meta.url));
 
     this.worker.onmessage = ({ data }) => {
-      console.log(data);
       this.processing = false;
       this.solution = data.solution;
       this.changeDetectorRef.detectChanges();
@@ -122,8 +116,7 @@ export class GraphAlgorithmsComponent implements OnDestroy {
 
 
   protected generateMatrix() {
-    // this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
-    this.adjacencyMatrix = matrix2;
+    this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
     this.displayedColumns = Array.from({ length: this.adjacencyMatrix.length }, (_, i) => i.toString());
     this.solution = undefined;
   }
