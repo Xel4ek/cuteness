@@ -454,7 +454,7 @@ export class GraphAlgorithms {
         return null;
       }
 
-      if (candidate.path.length === graphCopy.matrix.length - 1) {
+      if (candidate.matrix.length === 1) {
         candidate.path.push([candidate.indexes.rows[0], candidate.indexes.cols[0]]);
 
         if (candidate.lowerBound === Infinity) {

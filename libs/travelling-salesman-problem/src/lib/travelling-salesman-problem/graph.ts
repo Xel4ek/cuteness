@@ -14,7 +14,7 @@ export class Graph {
 
   public blockPath(row: number, col: number) {
     const curRow = this.indexes.rows.indexOf(row);
-    const curCol = this.indexes.rows.indexOf(col);
+    const curCol = this.indexes.cols.indexOf(col);
 
     if (curCol !== -1 && curRow !== -1) {
       this.matrix[curRow][curCol] = Infinity;
@@ -37,8 +37,6 @@ export class Graph {
     const newMatrix = updated
       .filter((_, rowIndex) => rowIndex !== curRow)
       .map((row) => row.filter((_, colIndex) => colIndex !== curCol));
-
-
 
     const { matrix, lowerBound } = this.reduceMatrix(newMatrix);
 
@@ -105,7 +103,7 @@ export class Graph {
   }
 
   private columnReduction(matrix: number[][]) {
-    const transposed = matrix[0].map((_, i) => matrix.map((row) => row[i]));
+    const transposed = matrix.map((_, i) => matrix.map((row) => row[i]));
     const reducedTransposed = this.rowReduction(transposed);
 
     const reducedMatrix = reducedTransposed.matrix[0].map((_, i) => reducedTransposed.matrix.map((row) => row[i]));
