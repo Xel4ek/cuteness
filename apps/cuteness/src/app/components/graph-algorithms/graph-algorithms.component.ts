@@ -51,6 +51,13 @@ const matrix3 = [
   [249, 897, 1, 682, 1, 0, 214],
   [1, 1, 231, 1, 165, 61, 0]
 ];
+
+interface Method {
+  title: string;
+  limit: number;
+  method: string;
+}
+
 @Component({
   selector: 'cuteness-graph-algorithms',
   standalone: true,
@@ -74,35 +81,39 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   protected solution?: TsmResult | null;
   protected size = 5;
   protected chance = 0.5;
-  protected methods = [
+  protected methods: Method[] = [
     {
       title: 'Little',
       method: 'Little',
+      limit: 60,
     },
     {
       title: 'Ants',
       method: 'Ants',
+      limit: 100,
     },
     {
       title: 'BranchAndBound',
       method: 'BranchAndBound32',
+      limit: 17,
     },
     {
       title: 'Genetic',
       method: 'Genetic',
+      limit: 19,
     },
   ];
   protected executionTime?: string;
   protected processing = false;
   protected elapsedTime$: Observable<string>;
-  protected selected: string;
+  protected selected: Method;
 
 
   private worker: Worker;
   private startTime = 0;
 
   constructor(private readonly changeDetectorRef: ChangeDetectorRef) {
-    this.selected = this.methods[0].method;
+    this.selected = this.methods[0];
     this.worker = new Worker(new URL('./tsp.worker.ts', import.meta.url));
 
     this.worker.onmessage = ({ data }) => {
@@ -124,6 +135,13 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   }
 
 
+  public resetGraph() {
+      if (this.selected.limit < this.size) {
+        this.size = this.selected.limit;
+        this.generateMatrix();
+      }
+  }
+
   protected generateMatrix() {
     this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
     this.displayedColumns = Array.from({ length: this.adjacencyMatrix.length }, (_, i) => i.toString());
@@ -134,7 +152,7 @@ export class GraphAlgorithmsComponent implements OnDestroy {
     this.processing = true;
     this.solution = undefined;
     this.startTime = performance.now();
-    this.worker.postMessage({ adjacencyMatrix: this.adjacencyMatrix, method: this.selected });
+    this.worker.postMessage({ adjacencyMatrix: this.adjacencyMatrix, method: this.selected.method });
   }
 
   protected readonly Math = Math;
@@ -145,7 +163,6 @@ export class GraphAlgorithmsComponent implements OnDestroy {
 
     return `${seconds}.${Math.trunc(milliseconds)} s`;
   }
-
 }
 
 

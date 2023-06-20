@@ -2,8 +2,8 @@
   Size: {{size}}
   <mat-slider
           class="example-margin"
-          [max]="20"
-          [min]="1"
+          [max]="selected.limit"
+          [min]="3"
           [step]="1"
   >
     <input matSliderThumb [(ngModel)]="size">
@@ -38,8 +38,8 @@
   </button>
   <mat-form-field  class="button" *ngIf="adjacencyMatrix.length">
     <mat-label>Choose method</mat-label>
-    <mat-select [(value)]="selected">
-      <mat-option *ngFor="let method of methods" [value]="method.method">
+    <mat-select [(value)]="selected" (valueChange)="resetGraph()" [disabled]="processing">
+      <mat-option *ngFor="let method of methods" [value]="method">
         {{method.title}}
       </mat-option>
     </mat-select>
@@ -61,7 +61,11 @@
   Sorry but we haven't solution try other graph
 </div>
 <div style="overflow-x:auto;" *ngIf="adjacencyMatrix.length">
-  <cuteness-graph [adjacencyMatrix]="adjacencyMatrix" [solution]="solution?.vertices"></cuteness-graph>
+  <cuteness-graph
+    *ngIf="size < 19 else noGraph"
+    [adjacencyMatrix]="adjacencyMatrix"
+    [solution]="solution?.vertices"
+  ></cuteness-graph>
 
   <table mat-table [dataSource]="adjacencyMatrix" class="mat-elevation-z8">
     <ng-container *ngFor="let column of displayedColumns; index as colIndex" [matColumnDef]="column">
@@ -72,3 +76,8 @@
   </table>
 </div>
 
+<ng-template #noGraph>
+  <div>
+    You can see graph if node count less 19
+  </div>
+</ng-template>
