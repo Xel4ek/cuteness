@@ -2,22 +2,20 @@ import { Comparable } from './comparable';
 
 export class Node<T extends Comparable<T>> implements Comparable<Node<T>> {
   public left: Node<T> | null = null;
-  public npl =  0;
   public right: Node<T> | null = null;
+  public npl =  0;
 
-  constructor(public readonly value:T) {
-  }
+  constructor(public readonly value:T) {}
+
   public compareTo(other: Node<T>): number {
     return this.value.compareTo(other.value);
   }
 }
 
 export class PriorityQueue<T extends Comparable<T>> {
-  public size = 0;
-  public root: Node<T> | null = null;
+  private root: Node<T> | null = null;
 
   public enqueue(node: T): void {
-    this.size++;
     this.root = this.merge(this.root, new Node<T>(node));
   }
 
@@ -25,12 +23,11 @@ export class PriorityQueue<T extends Comparable<T>> {
     if (!this.root) {
       return undefined;
     }
-    const rootState = this.root;
-    this.root = this.merge(this.root.left, this.root.right);
-    rootState.left = null;
-    rootState.right = null;
 
-    return rootState.value;
+    const value = this.root.value;
+    this.root = this.merge(this.root.left, this.root.right);
+
+    return value;
   }
 
   public isEmpty(): boolean {

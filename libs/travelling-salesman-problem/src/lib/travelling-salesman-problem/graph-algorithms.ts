@@ -316,37 +316,18 @@ export class GraphAlgorithms {
   }
 
   public static solveTravelingSalesmanProblemLittle(graph: number[][]): TsmResult | null {
-    function restorePath(path: [number, number][]) {
-      const result: number[] = [];
-
-      let current: [number, number] = path.shift() ?? [-1, -1];
-      result.push(current[0]);
-      while (path.length > 0) {
-        const nextIndex = path.findIndex((pair) => pair[0] === current[1]); // ищем в массиве дугу у которой нулевой элемент равен 1 элементу предыдущей дуги
-        if (nextIndex !== -1) {
-          current = path[nextIndex];
-          path.splice(nextIndex, 1);
-          result.push(current[0]);
-        } else {
-          break;
-        }
-      }
-
-      result.push(current[1]);
-
-      return result;
-    }
-
-
     const graphCopy = new Graph(graph.map((row) => row.map((item) => (item === 0 ? Infinity : item))));
 
     const queue = new PriorityQueue<Graph>();
 
     const { matrix, lowerBound } = graphCopy.reduceMatrix(graphCopy.matrix);
     let paths = 0;
+
     queue.enqueue(new Graph(matrix, lowerBound));
+
     while (!queue.isEmpty()) {
       const candidate= queue.dequeue();
+
       if (!candidate) {
         return null;
       }
@@ -358,15 +339,13 @@ export class GraphAlgorithms {
           return null;
         }
 
-        const vertices = restorePath(candidate.path);
-        if (vertices.length !== graph.length + 1) {
-          continue;
-        }
-
-        return {
-          vertices,
-          distance: candidate.lowerBound,
-          paths,
+        const vertices = candidate.restorePath();
+        if (vertices.length === graph.length + 1) {
+          return {
+            vertices,
+            distance: candidate.lowerBound,
+            paths,
+          }
         }
       } else {
 
@@ -379,13 +358,11 @@ export class GraphAlgorithms {
             return  null;
           }
 
-          const cutGraph = candidate.transform(row, col);
-          queue.enqueue(cutGraph);
+          queue.enqueue(candidate.transform(row, col));
 
           if (penalty !== Infinity) {
-            candidate.blockPath(row, col);
-            candidate.lowerBound += penalty;
-            candidate.dryReduceMatrix();
+            candidate.dryReduceMatrix(row, col, penalty);
+
             queue.enqueue(candidate);
           }
       }
