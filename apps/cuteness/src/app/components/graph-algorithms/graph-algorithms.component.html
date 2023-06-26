@@ -8,7 +8,7 @@
   >
     <input matSliderThumb [(ngModel)]="size">
   </mat-slider>
-  <span>Fill: {{Math.trunc(chance * 100)}} %</span>
+  <span>Fill: {{ chance * 100 | number: '0.0-0' }} %</span>
   <mat-slider
           class="example-margin"
           [max]="1"
@@ -62,7 +62,7 @@
 </div>
 <div style="overflow-x:auto;" *ngIf="adjacencyMatrix.length">
   <cuteness-graph
-    *ngIf="size < 19 else noGraph"
+    *ngIf="lastSize < 19 else noGraph"
     [adjacencyMatrix]="adjacencyMatrix"
     [solution]="solution?.vertices"
   ></cuteness-graph>

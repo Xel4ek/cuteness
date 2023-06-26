@@ -40,6 +40,7 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   protected displayedColumns: string[] = [];
   protected solution?: TsmResult | null;
   protected size = 5;
+  protected lastSize = 0;
   protected chance = 0.5;
   protected methods: Method[] = [
     {
@@ -98,6 +99,7 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   }
 
   protected generateMatrix() {
+    this.lastSize = this.size;
     this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
     this.displayedColumns = Array.from({ length: this.adjacencyMatrix.length }, (_, i) => i.toString());
     this.solution = undefined;
@@ -109,8 +111,6 @@ export class GraphAlgorithmsComponent implements OnDestroy {
     this.startTime = performance.now();
     this.worker.postMessage({ adjacencyMatrix: this.adjacencyMatrix, method: this.selected.method });
   }
-
-  protected readonly Math = Math;
 
   private formatTime(time: number) {
     const seconds = Math.floor(time / 1000);
