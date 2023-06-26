@@ -1,4 +1,6 @@
-export class Graph {
+import { Comparable } from './comparable';
+
+export class Graph implements Comparable<Graph> {
   constructor(
     public matrix: number[][],
     public lowerBound = 0,
@@ -10,7 +12,11 @@ export class Graph {
       cols: Array.from({ length: matrix.length }).map((_, i) => i),
     },
     public readonly path: [number, number][] = [],
-  ) { }
+  ) {}
+
+  public compareTo(other: Graph): number {
+    return this.lowerBound - other.lowerBound;
+  }
 
   public blockPath(row: number, col: number) {
     const curRow = this.indexes.rows.indexOf(row);
@@ -30,7 +36,7 @@ export class Graph {
     const curRow = this.indexes.rows.indexOf(row);
     const curCol = this.indexes.cols.indexOf(col);
 
-    const updated = this.matrix.map(row => [...row]);
+    const updated = this.matrix.map((row) => [...row]);
 
     const blockCol = this.indexes.cols.indexOf(row);
     const blockRow = this.indexes.rows.indexOf(col);
@@ -45,28 +51,31 @@ export class Graph {
 
     const { matrix, lowerBound } = this.reduceMatrix(newMatrix);
 
-
     return new Graph(
       matrix,
       this.lowerBound + lowerBound,
       {
-        rows: this.indexes.rows.filter((_ , index) => index !== curRow),
+        rows: this.indexes.rows.filter((_, index) => index !== curRow),
         cols: this.indexes.cols.filter((_, index) => index !== curCol),
       },
       [...this.path, [row, col]],
-    )
+    );
   }
 
   public calculatePenalties() {
     let maxPenalty = -Infinity;
     let maxPenaltyPos: [number, number] | undefined;
-    const penalties: number[][] = Array(this.matrix.length).fill(0).map(() => Array(this.matrix.length).fill(0));
+    const penalties: number[][] = Array(this.matrix.length)
+      .fill(0)
+      .map(() => Array(this.matrix.length).fill(0));
 
     for (let i = 0; i < this.matrix.length; i++) {
       for (let j = 0; j < this.matrix[i].length; j++) {
         if (this.matrix[i][j] === 0) {
           const rowMin = Math.min(...this.matrix[i].filter((val, idx) => idx !== j && val !== Infinity));
-          const colMin = Math.min(...this.matrix.map((row, idx) => (idx !== i && row[j] !== Infinity ? row[j] : Infinity)));
+          const colMin = Math.min(
+            ...this.matrix.map((row, idx) => (idx !== i && row[j] !== Infinity ? row[j] : Infinity)),
+          );
 
           penalties[i][j] = rowMin + colMin;
 
@@ -78,11 +87,14 @@ export class Graph {
       }
     }
 
-    if(!maxPenaltyPos) {
-      return { penalty: -1, maxPenaltyPos: [-1, -1]}
+    if (!maxPenaltyPos) {
+      return { penalty: -1, maxPenaltyPos: [-1, -1] };
     }
 
-    return { penalty: maxPenalty, maxPenaltyPos: [this.indexes.rows[maxPenaltyPos[0]], this.indexes.cols[maxPenaltyPos[1]]] };
+    return {
+      penalty: maxPenalty,
+      maxPenaltyPos: [this.indexes.rows[maxPenaltyPos[0]], this.indexes.cols[maxPenaltyPos[1]]],
+    };
   }
 
   public reduceMatrix(matrix: number[][]) {
@@ -92,7 +104,7 @@ export class Graph {
     return {
       matrix: colReduced.matrix,
       lowerBound: [...rowReduced.redux, ...colReduced.redux].reduce((acc, cur) => acc + cur, 0),
-    }
+    };
   }
 
   private rowReduction(matrix: number[][]) {
@@ -107,7 +119,7 @@ export class Graph {
 
     return {
       redux,
-      matrix: newMatrix
+      matrix: newMatrix,
     };
   }
 
