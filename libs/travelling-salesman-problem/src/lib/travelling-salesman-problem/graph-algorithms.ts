@@ -328,15 +328,11 @@ export class GraphAlgorithms {
     while (!queue.isEmpty()) {
       const candidate= queue.dequeue();
 
-      if (!candidate) {
+      if (!candidate || !candidate.valid) {
         return null;
       }
 
       if (candidate.isScalar) {
-        if (!candidate.valid) {
-          return null;
-        }
-
         const vertices = candidate.restorePath();
         if (vertices.length === graph.length + 1) {
           return {
@@ -346,23 +342,22 @@ export class GraphAlgorithms {
           }
         }
       } else {
+        const {
+          penalty,
+          maxPenaltyPos: [row, col],
+        } = candidate.calculatePenalties();
 
-          const {
-            penalty,
-            maxPenaltyPos: [row, col],
-          } = candidate.calculatePenalties();
+        if (penalty === -1) {
+          return  null;
+        }
 
-          if (penalty === -1) {
-            return  null;
-          }
+        queue.enqueue(candidate.transform(row, col));
 
-          queue.enqueue(candidate.transform(row, col));
+        if (penalty !== Infinity) {
+          candidate.dryReduceMatrix(row, col, penalty);
 
-          if (penalty !== Infinity) {
-            candidate.dryReduceMatrix(row, col, penalty);
-
-            queue.enqueue(candidate);
-          }
+          queue.enqueue(candidate);
+        }
       }
       paths++;
     }
