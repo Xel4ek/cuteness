@@ -1,6 +1,6 @@
 import { Comparable } from './comparable';
 
-export class Node<T extends Comparable> implements Comparable {
+class Node<T extends Comparable> implements Comparable {
   public left: Node<T> | null = null;
   public right: Node<T> | null = null;
   public npl =  0;

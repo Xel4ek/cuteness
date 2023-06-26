@@ -74,6 +74,7 @@ export class Graph implements Comparable {
 
     let current: [number, number] = path.shift() ?? [-1, -1];
     result.push(current[0]);
+
     while (path.length > 0) {
       const nextIndex = path.findIndex((pair) => pair[0] === current[1]); // ищем в массиве дугу у которой нулевой элемент равен 1 элементу предыдущей дуги
       if (nextIndex !== -1) {
