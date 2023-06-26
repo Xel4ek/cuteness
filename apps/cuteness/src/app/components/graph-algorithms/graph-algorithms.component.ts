@@ -69,15 +69,17 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   private worker: Worker;
   private startTime = 0;
 
-  constructor(private readonly changeDetectorRef: ChangeDetectorRef) {
+  constructor(
+    private readonly changeDetectorRef: ChangeDetectorRef,
+    ) {
     this.selected = this.methods[0];
     this.worker = new Worker(new URL('./tsp.worker.ts', import.meta.url));
 
     this.worker.onmessage = ({ data }) => {
       this.processing = false;
       this.solution = data.solution;
-      this.changeDetectorRef.detectChanges();
       this.executionTime = this.formatTime(data.timeElapsed);
+      this.changeDetectorRef.detectChanges();
     };
 
     this.elapsedTime$ = interval(100).pipe(
