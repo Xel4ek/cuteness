@@ -1,6 +1,6 @@
 import { Comparable } from './comparable';
 
-export class Node<T extends { lowerBound: number }> implements Comparable<Node<T>> {
+export class Node<T extends Comparable<T>> implements Comparable<Node<T>> {
   public left: Node<T> | null = null;
   public npl =  0;
   public right: Node<T> | null = null;
@@ -8,11 +8,11 @@ export class Node<T extends { lowerBound: number }> implements Comparable<Node<T
   constructor(public readonly value:T) {
   }
   public compareTo(other: Node<T>): number {
-    return this.value.lowerBound - other.value.lowerBound;
+    return this.value.compareTo(other.value);
   }
 }
 
-export class PriorityQueue<T extends { lowerBound: number }> {
+export class PriorityQueue<T extends Comparable<T>> {
   public size = 0;
   public root: Node<T> | null = null;
 
