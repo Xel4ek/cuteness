@@ -1,6 +1,6 @@
 import { Comparable } from './comparable';
 
-export class Node<T extends Comparable<T>> implements Comparable<Node<T>> {
+export class Node<T extends Comparable> implements Comparable {
   public left: Node<T> | null = null;
   public right: Node<T> | null = null;
   public npl =  0;
@@ -12,7 +12,7 @@ export class Node<T extends Comparable<T>> implements Comparable<Node<T>> {
   }
 }
 
-export class PriorityQueue<T extends Comparable<T>> {
+export class PriorityQueue<T extends Comparable> {
   private root: Node<T> | null = null;
 
   public enqueue(node: T): void {

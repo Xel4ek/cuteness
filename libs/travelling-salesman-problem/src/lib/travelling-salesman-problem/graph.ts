@@ -1,6 +1,6 @@
 import { Comparable } from './comparable';
 
-export class Graph implements Comparable<Graph> {
+export class Graph implements Comparable {
   constructor(
     public matrix: number[][],
     public lowerBound = 0,
