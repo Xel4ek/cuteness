@@ -316,12 +316,10 @@ export class GraphAlgorithms {
   }
 
   public static solveTravelingSalesmanProblemLittle(graph: number[][]): TsmResult | null {
-    const graphCopy = graph.map((row) => row.map((item) => (item === 0 ? Infinity : item)));
-
-    const queue = new PriorityQueue<Graph>();
-
-    const { matrix, lowerBound } = Graph.reduceMatrix(graphCopy);
     let paths = 0;
+    const graphCopy = graph.map((row) => row.map((item) => (item === 0 ? Infinity : item)));
+    const queue = new PriorityQueue<Graph>();
+    const { matrix, lowerBound } = Graph.reduceMatrix(graphCopy);
 
     queue.enqueue(new Graph(matrix, lowerBound));
 
@@ -332,7 +330,7 @@ export class GraphAlgorithms {
         return null;
       }
 
-      if (candidate.isScalar) {
+      if (candidate.isScalar()) {
         const vertices = candidate.restorePath();
         if (vertices.length === graph.length + 1) {
           return {

@@ -39,10 +39,6 @@ export class Graph implements Comparable {
     };
   }
 
-  public get isScalar() {
-    return this.matrix.length === 1;
-  }
-
   public get valid() {
     return this.lowerBound !== Infinity;
   }
@@ -63,6 +59,10 @@ export class Graph implements Comparable {
     },
     private readonly path: [number, number][] = [],
   ) {}
+
+  public isScalar() {
+    return this.matrix.length === 1;
+  }
 
   public compareTo(other: Graph): number {
     return this.lowerBound - other.lowerBound;
