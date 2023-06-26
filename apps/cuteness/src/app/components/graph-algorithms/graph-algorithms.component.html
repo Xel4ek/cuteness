@@ -40,7 +40,7 @@
     <mat-label>Choose method</mat-label>
     <mat-select [(value)]="selected" (valueChange)="resetGraph()" [disabled]="processing">
       <mat-option *ngFor="let method of methods" [value]="method">
-        {{method.title}}
+        {{ method.title }}
       </mat-option>
     </mat-select>
   </mat-form-field>
@@ -62,7 +62,7 @@
 </div>
 <div style="overflow-x:auto;" *ngIf="adjacencyMatrix.length">
   <cuteness-graph
-    *ngIf="lastSize < 19 else noGraph"
+    *ngIf="lastSize < 21 else noGraph"
     [adjacencyMatrix]="adjacencyMatrix"
     [solution]="solution?.vertices"
   ></cuteness-graph>
@@ -78,6 +78,6 @@
 
 <ng-template #noGraph>
   <div>
-    You can see graph if node count less 19
+    You can see graph if node count less or equal 20
   </div>
 </ng-template>

@@ -1,20 +1,22 @@
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GraphModule } from '@swimlane/ngx-graph';
 import { Edge } from '@swimlane/ngx-graph/lib/models/edge.model';
-import { Node } from '@swimlane/ngx-graph/lib/models/node.model'
+import { Node } from '@swimlane/ngx-graph/lib/models/node.model';
+
 @Component({
   selector: 'cuteness-graph[adjacencyMatrix]',
   standalone: true,
   imports: [CommonModule, GraphModule],
   templateUrl: './graph.component.html',
   styleUrls: ['./graph.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GraphComponent {
-  protected links: (Edge & { weight: number, used?: boolean })[] = [];
-  protected nodes: (Node )[] = [];
+  protected links: (Edge & { weight: number; used?: boolean })[] = [];
+  protected nodes: Node[] = [];
   private _adjacencyMatrix: number[][] = [];
-  private _solution : number[] = [];
+  private _solution: number[] = [];
 
   @Input()
   public set solution(solution: number[] | undefined) {
@@ -45,7 +47,7 @@ export class GraphComponent {
     for (let i = 0; i < this.adjacencyMatrix.length; i++) {
       this.nodes.push({
         id: i.toString(),
-        label: `${i}`
+        label: `${i}`,
       });
     }
 
@@ -62,7 +64,6 @@ export class GraphComponent {
         }
       }
     }
-
   }
 
   private getRandomColor(): string {
@@ -77,7 +78,7 @@ export class GraphComponent {
   }
 
   private processLinks() {
-    this.links.forEach(link => link.used = false);
+    this.links.forEach((link) => (link.used = false));
 
     if (this.solution) {
       for (let i = 0; i < this.solution.length - 1; i++) {
@@ -90,7 +91,7 @@ export class GraphComponent {
           }
         });
       }
-      this.links = [...this.links]
+      this.links = [...this.links];
     }
   }
 }

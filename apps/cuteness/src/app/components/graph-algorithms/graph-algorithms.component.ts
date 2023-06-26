@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { Route } from '@angular/router';
@@ -34,6 +34,7 @@ interface Method {
   ],
   templateUrl: './graph-algorithms.component.html',
   styleUrls: ['./graph-algorithms.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GraphAlgorithmsComponent implements OnDestroy {
   protected adjacencyMatrix: number[][] = [];
