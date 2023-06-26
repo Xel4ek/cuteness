@@ -341,24 +341,27 @@ export class GraphAlgorithms {
             paths,
           }
         }
-      } else {
-        const {
-          penalty,
-          maxPenaltyPos: [row, col],
-        } = candidate.calculatePenalties();
 
-        if (penalty === -1) {
-          return  null;
-        }
-
-        queue.enqueue(candidate.transform(row, col));
-
-        if (penalty !== Infinity) {
-          candidate.dryReduceMatrix(row, col, penalty);
-
-          queue.enqueue(candidate);
-        }
+        continue;
       }
+
+      const {
+        penalty,
+        maxPenaltyPos: [row, col],
+      } = candidate.calculatePenalties();
+
+      if (penalty === -1) {
+        return  null;
+      }
+
+      queue.enqueue(candidate.transform(row, col));
+
+      if (penalty !== Infinity) {
+        candidate.dryReduceMatrix(row, col, penalty);
+
+        queue.enqueue(candidate);
+      }
+
       paths++;
     }
 
