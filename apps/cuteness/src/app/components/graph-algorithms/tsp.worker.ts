@@ -3,7 +3,7 @@
 import { GraphAlgorithms, TsmResult } from '@cuteness/travelling-salesman-problem';
 
 interface WorkerInputMessage {
-  method: 'Ants' | 'BranchAndBound' | 'Genetic' | 'BranchAndBound32' | 'Little';
+  method: 'Ants' | 'Genetic' | 'Little';
   adjacencyMatrix: number[][];
 }
 
@@ -14,9 +14,7 @@ interface WorkerOutputMessage {
 
 const algorithms = {
   Ants: GraphAlgorithms.solveTravelingSalesmanProblemACO,
-  BranchAndBound: GraphAlgorithms.solveTravelingSalesmanProblemBaB,
   Genetic: GraphAlgorithms.solveTravelingSalesmanProblemGA,
-  BranchAndBound32: GraphAlgorithms.solveTravelingSalesmanProblemBaB32,
   Little: GraphAlgorithms.solveTravelingSalesmanProblemLittle,
 };
 

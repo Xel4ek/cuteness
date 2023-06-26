@@ -93,14 +93,9 @@ export class GraphAlgorithmsComponent implements OnDestroy {
       limit: 100,
     },
     {
-      title: 'BranchAndBound',
-      method: 'BranchAndBound32',
-      limit: 17,
-    },
-    {
       title: 'Genetic',
       method: 'Genetic',
-      limit: 19,
+      limit: 15,
     },
   ];
   protected executionTime?: string;
@@ -143,7 +138,8 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   }
 
   protected generateMatrix() {
-    this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
+    // this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
+    this.adjacencyMatrix = matrix;
     this.displayedColumns = Array.from({ length: this.adjacencyMatrix.length }, (_, i) => i.toString());
     this.solution = undefined;
   }
@@ -158,8 +154,8 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   protected readonly Math = Math;
 
   private formatTime(time: number) {
-    const seconds = Math.floor(time / 1000); // Get seconds
-    const milliseconds = time % 1000; // Get remaining milliseconds
+    const seconds = Math.floor(time / 1000);
+    const milliseconds = time % 1000;
 
     return `${seconds}.${Math.trunc(milliseconds)} s`;
   }
