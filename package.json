@@ -24,7 +24,7 @@
     "@swimlane/ngx-graph": "^8.0.3",
     "angular-cli-ghpages": "^1.0.6",
     "d3": "^7.8.4",
-    "grapth-aloritms": "file:vendors/graph-algorims/pkg",
+    "grapth-aloritms": "file:vendors/graph-algoritms/pkg",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "0.13.0"
