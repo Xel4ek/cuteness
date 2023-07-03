@@ -1,4 +1,5 @@
-use crate::graph::Graph;
+use crate::graph::{Cell, Graph};
+use ndarray::Array2;
 
 pub trait Redux {
   fn redux(&mut self, penalty: Option<u64>) -> u64;
@@ -11,18 +12,22 @@ impl Redux for Graph {
   }
 }
 
-impl Redux for Vec<Vec<u32>> {
+impl Redux for Array2<Cell> {
   fn redux(&mut self, penalty: Option<u64>) -> u64 {
-    let size = self.len();
+    let size = self.dim().0;
     let mut lower_bound: u32 = 0;
 
     // Subtract min from each row
     for i in 0..size {
-      let min_row = self[i][..size].iter().filter(|&x| *x != u32::MAX).min().copied().unwrap_or(0);
+      let min_row = self.row(i).iter()
+        .filter(|cell| cell.value != u32::MAX)
+        .min_by_key(|cell| cell.value)
+        .map(|cell| cell.value)
+        .unwrap_or(0);
 
-      for j in 0..size {
-        if self[i][j] != u32::MAX {
-          self[i][j] -= min_row;
+      for cell in self.row_mut(i) {
+        if cell.value != u32::MAX {
+          cell.value -= min_row;
         }
       }
 
@@ -31,13 +36,15 @@ impl Redux for Vec<Vec<u32>> {
 
     // Subtract min from each column
     for j in 0..size {
-      let min_col = self[..size].iter().map(|row| row[j]).filter(|x| *x != u32::MAX).min().unwrap_or(0);
+      let min_col = self.column(j).iter()
+        .filter(|cell| cell.value != u32::MAX)
+        .min_by_key(|cell| cell.value)
+        .map(|cell| cell.value)
+        .unwrap_or(0);
 
-      for i in 0..size {
-        if let Some(row) = self.get_mut(i) {
-          if row[j] != u32::MAX {
-            row[j] -= min_col;
-          }
+      for cell in self.column_mut(j) {
+        if cell.value != u32::MAX {
+          cell.value -= min_col;
         }
       }
 
@@ -50,6 +57,7 @@ impl Redux for Vec<Vec<u32>> {
     }
   }
 }
+
 
 
 #[cfg(test)]

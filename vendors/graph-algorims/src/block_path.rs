@@ -6,14 +6,11 @@ pub trait BlockPath {
 
 impl BlockPath for Graph {
   fn block_path(&mut self, path: &Path) {
-    let row_index = self.indexes.rows.iter().position(|&r| r == path.row);
-    let col_index = self.indexes.cols.iter().position(|&c| c == path.col);
-
-    match (row_index, col_index) {
-      (Some(row), Some(col)) => {
-        self.matrix[row][col] = u32::MAX;
-      },
-      _ => {}
+    for cell in self.matrix.iter_mut() {
+      if cell.row == path.row && cell.col == path.col {
+        cell.value = u32::MAX;
+        break;
+      }
     }
   }
 }

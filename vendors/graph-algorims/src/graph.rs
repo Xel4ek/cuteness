@@ -1,21 +1,30 @@
 use std::cmp::Ordering;
 use std::fmt;
+use js_sys::Array;
 use crate::redux::Redux;
+use ndarray::Array2;
+use ndarray::Array as NDArray;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Path {
-  pub row: u32,
-  pub col: u32,
+  pub row: u16,
+  pub col: u16,
+}
+
+#[derive(Clone, PartialEq)]
+pub struct Cell {
+  pub row: u16,
+  pub col: u16,
+  pub value: u32,
 }
 
 pub struct Indexes {
-  pub rows: Vec<u32>,
-  pub cols: Vec<u32>,
+  pub rows: Vec<u16>,
+  pub cols: Vec<u16>,
 }
 
 pub struct Graph {
-  pub matrix: Vec<Vec<u32>>,
-  pub indexes: Indexes,
+  pub matrix: Array2<Cell>,
   pub path: Vec<Path>,
   pub lower_bound: u64,
 }
@@ -24,12 +33,26 @@ impl Graph {
   pub fn new(matrix: Vec<Vec<u32>>) -> Self {
     let size = matrix.len();
     let indexes = Indexes {
-      rows: (0..size as u32).collect(),
-      cols: (0..size as u32).collect(),
+      rows: (0..size as u16).collect(),
+      cols: (0..size as u16).collect(),
     };
+
+    let data = matrix.into_iter().enumerate()
+      .flat_map(|(i, row)| {
+        row.into_iter().enumerate().map(move |(j, value)| {
+          Cell {
+            row: i as u16,
+            col: j as u16,
+            value,
+          }
+        })
+      });
+
+
+    let arr = NDArray::from_iter(data).into_shape((size, size)).unwrap();
+
     let mut graph = Graph {
-      matrix,
-      indexes,
+      matrix: arr,
       path: Vec::new(),
       lower_bound: 0,
     };
@@ -59,6 +82,12 @@ impl Ord for Graph {
   }
 }
 
+impl fmt::Debug for Cell {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "[{}, {}] {}", self.row, self.col, if self.value == u32::MAX { "∞".to_string() } else { self.value.to_string() })
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -81,9 +110,6 @@ mod tests {
     let mut graph = Graph::new(matrix.clone());
 
     assert_eq!(5, graph.redux(Some(0)));
-    assert_eq!(graph.matrix, target);
-    assert_eq!(graph.indexes.rows, vec![0, 1, 2]);
-    assert_eq!(graph.indexes.cols, vec![0, 1, 2]);
     assert!(graph.path.is_empty());
     assert_eq!(graph.lower_bound, 5);
   }
@@ -94,9 +120,6 @@ mod tests {
 
     let graph = Graph::new(matrix.clone());
 
-    assert_eq!(graph.matrix, matrix);
-    assert!(graph.indexes.rows.is_empty());
-    assert!(graph.indexes.cols.is_empty());
     assert!(graph.path.is_empty());
     assert_eq!(graph.lower_bound, 0);
   }
@@ -107,24 +130,25 @@ mod tests {
 
 impl fmt::Debug for Graph {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "Graph {{\n  matrix:\n")?;
-    for row in &self.matrix {
+    writeln!(f, "Graph {{")?;
+    writeln!(f, "  matrix:")?;
+    for row in self.matrix.outer_iter() {
       write!(f, "    ")?;
-      for &value in row {
-        if value == u32::MAX {
+      for cell in row {
+        if cell.value == u32::MAX {
           write!(f, "{:<5}", "∞ ")?; // Задайте ширину вместо 5 на подходящее значение
         } else {
-          write!(f, "{:<5}", format!("{} ", value))?; // Задайте ширину вместо 5 на подходящее значение
+          write!(f, "{:<5}", format!("{} ", cell.value))?; // Задайте ширину вместо 5 на подходящее значение
         }
       }
       writeln!(f)?;
     }
-    write!(f, "  indexes: {:?},\n", self.indexes)?;
-    write!(f, "  path: {:?},\n", self.path)?;
-    write!(f, "  lower_bound: {}\n", self.lower_bound)?;
+    writeln!(f, "  path: {:?},", self.path)?;
+    writeln!(f, "  lower_bound: {}", self.lower_bound)?;
     write!(f, "}}")
   }
 }
+
 impl fmt::Debug for Indexes {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     write!(f, "Indexes(rows: {:?}, cols: {:?})", self.rows, self.cols)

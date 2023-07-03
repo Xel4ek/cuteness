@@ -1,46 +1,63 @@
+use js_sys::Array;
 use crate::block_path::BlockPath;
-use crate::graph::{Graph, Indexes, Path};
+use crate::graph::{Cell, Graph, Indexes, Path};
 use crate::redux::Redux;
-
+use ndarray::Array as NDArray;
 
 pub trait Transform {
-  fn transform(&self, path: Path) -> Self;
+  fn transform(&mut self, path: Path) -> Self;
 }
 
 impl Transform for Graph {
-  fn transform(&self, path: Path) -> Self {
-    let row_idx = self.indexes.rows.iter().position(|&r| r == path.row).unwrap();
-    let col_idx = self.indexes.cols.iter().position(|&c| c == path.col).unwrap();
+  fn transform(&mut self, path: Path) -> Self {
+    // let row_idx = self.indexes.rows.iter().position(|&r| r == path.row).unwrap();
+    // let col_idx = self.indexes.cols.iter().position(|&c| c == path.col).unwrap();
+    let size = self.matrix.shape()[0] - 1;
+    let iter = self.matrix.iter_mut()
+      .map(|cell| {
+        if cell.row == path.row && cell.col == path.col {
+          cell.value = u32::MAX;
+        }
 
-    let new_matrix = self.matrix.iter().enumerate()
-      .filter(|&(i, _)| i != row_idx)
-      .map(|(_, row)| row.iter().enumerate()
-        .filter(|&(j, _)| j != col_idx)
-        .map(|(_, &item)| item)
-        .collect())
-      .collect();
+        cell
+      })
+      .filter(|cell| !(cell.row == path.row || cell.col == path.col))
+      .map(|cell| {
+        if cell.row == path.col && cell.col == path.row {
+          Cell {
+            row: cell.row,
+            col: cell.col,
+            value: u32::MAX
+          }
+        } else {
+          cell.clone()
+        }
+      });
 
-    let new_rows = self.indexes.rows.iter().enumerate()
-      .filter(|&(i, _)| i != row_idx)
-      .map(|(_, &item)| item)
-      .collect();
+    // println!("{:?}", size);
+    let new_matrix = NDArray::from_iter(iter).into_shape((size, size)).unwrap();
+    // println!("{:#?}", new_matrix);
+    // println!("--------------------->");
 
-    let new_cols = self.indexes.cols.iter().enumerate()
-      .filter(|&(i, _)| i != col_idx)
-      .map(|(_, &item)| item)
-      .collect();
+    // let new_rows = self.indexes.rows.iter().enumerate()
+    //   .filter(|&(i, _)| i != row_idx)
+    //   .map(|(_, &item)| item)
+    //   .collect();
+    //
+    // let new_cols = self.indexes.cols.iter().enumerate()
+    //   .filter(|&(i, _)| i != col_idx)
+    //   .map(|(_, &item)| item)
+    //   .collect();
 
     let mut new_path = self.path.clone();
     new_path.push(path.clone());
 
     let mut new_graph = Graph {
       matrix: new_matrix,
-      indexes: Indexes { rows: new_rows, cols: new_cols },
       path: new_path,
       lower_bound: self.lower_bound,
     };
 
-    new_graph.block_path(&Path { row: path.col, col: path.row });
     new_graph.redux(None);
     new_graph
   }

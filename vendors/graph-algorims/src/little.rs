@@ -1,14 +1,12 @@
 use std::collections::BinaryHeap;
-use std::error::Error;
 use crate::block_path::BlockPath;
 use crate::calculate_penalties::CalculatePenalties;
-use crate::graph::{Graph, Path};
+use crate::graph::{Graph};
 use crate::path_restore::PathRestore;
 use crate::redux::Redux;
 use crate::transform::Transform;
 use wasm_bindgen::prelude::*;
 
-use js_sys::Array;
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
@@ -21,7 +19,7 @@ pub struct Matrix {
 #[derive(Debug)]
 #[derive(Serialize, Deserialize)]
 pub struct TsmResult {
-  pub path: Vec<u32>,
+  pub path: Vec<u16>,
   pub distance: u64,
   pub steps: u64,
 }
@@ -92,6 +90,8 @@ pub fn solve_traveling_salesman_problem_little(matrix: Vec<Vec<u32>>) -> Option<
   queue.push(Graph::new(matrix));
 
   while let Some(mut graph) = queue.pop() {
+    // println!("{:#?}", graph);
+
     if graph.lower_bound == u32::MAX as u64 {
       return None;
     }
@@ -111,10 +111,10 @@ pub fn solve_traveling_salesman_problem_little(matrix: Vec<Vec<u32>>) -> Option<
 
     let (penalty_option, max_penalty_pos) = graph.calculate_penalties();
 
-    queue.push(graph.transform(max_penalty_pos.clone()));
+    queue.push(graph.transform(max_penalty_pos));
 
     if let Some(penalty) = penalty_option {
-      graph.block_path(&max_penalty_pos);
+      // graph.block_path(&max_penalty_pos);
       graph.redux(Some(penalty as u64));
       queue.push(graph);
     }

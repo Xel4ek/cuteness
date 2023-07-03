@@ -1,14 +1,20 @@
 use crate::graph::{Graph, Path};
 
 pub trait PathRestore {
-  fn restore_path(&mut self) -> Option<Vec<u32>>;
+  fn restore_path(&mut self) -> Option<Vec<u16>>;
 }
 
 impl PathRestore for Graph {
-  fn restore_path(&mut self) -> Option<Vec<u32>> {
+  fn restore_path(&mut self) -> Option<Vec<u16>> {
 
     let mut restored_path = Vec::new();
-    let mut current_path = Path { col: self.indexes.cols[0], row: self.indexes.rows[0] };
+    let cell = &self.matrix[[0, 0]];
+    let mut current_path = Path { col: cell.col, row: cell.row };
+    if cell.value == u32::MAX {
+      return None
+    }
+
+    self.lower_bound += cell.value as u64;
     restored_path.push(current_path.row);
 
     while !self.path.is_empty() {
