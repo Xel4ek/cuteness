@@ -1,7 +1,6 @@
 mod graph;
 mod redux;
 mod transform;
-mod block_path;
 mod calculate_penalties;
 mod little;
 mod path_restore;

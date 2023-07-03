@@ -12,7 +12,6 @@ fn main() -> std::io::Result<()> {
     std::process::exit(1);
   }
 
-  // Чтение из файла
   let mut file = File::open(&args[1])?;
   let mut data = String::new();
   file.read_to_string(&mut data)?;
@@ -27,7 +26,6 @@ fn main() -> std::io::Result<()> {
         .collect()
     })
     .collect();
-  // Передача данных в функцию
   let start = Instant::now();
   let result = solve_traveling_salesman_problem_little(data);
   let duration = start.elapsed();

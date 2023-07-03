@@ -130,23 +130,3 @@ pub fn solve_traveling_salesman_problem_little(matrix: Vec<Vec<u32>>) -> Option<
 
   None
 }
-
-#[cfg(test)]
-mod tests {
-  use std::result;
-  use super::*;
-
-  // #[test]
-  // fn test_graph_new() {
-  //   let result = solve_traveling_salesman_problem_little(vec![
-  //     vec![u32::MAX, 20, 18, 12, 8],
-  //     vec![5, u32::MAX, 14, 7, 11],
-  //     vec![12, 18, u32::MAX, 6, 11],
-  //     vec![11, 17, 11, u32::MAX, 12],
-  //     vec![5, 5, 5, 5, u32::MAX],
-  //   ]);
-  //
-  //   println!("{:?}", result);
-  //   assert_eq!(1,2);
-  // }
-}

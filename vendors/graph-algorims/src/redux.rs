@@ -17,7 +17,6 @@ impl Redux for Array2<Cell> {
     let size = self.dim().0;
     let mut lower_bound: u32 = 0;
 
-    // Subtract min from each row
     for i in 0..size {
       let min_row = self.row(i).iter()
         .filter(|cell| cell.value != u32::MAX)
@@ -34,7 +33,6 @@ impl Redux for Array2<Cell> {
       lower_bound += min_row;
     }
 
-    // Subtract min from each column
     for j in 0..size {
       let min_col = self.column(j).iter()
         .filter(|cell| cell.value != u32::MAX)
