@@ -1,5 +1,5 @@
 [package]
-name = "graph-algorims"
+name = "graph-algoritms"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "cool-tool"
+name = "graph-algoritms"
 test = false
 bench = true
 path = "src/main.rs"

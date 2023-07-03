@@ -1,9 +1,8 @@
 use std::cmp::Ordering;
 use std::fmt;
-use js_sys::Array;
 use crate::redux::Redux;
 use ndarray::Array2;
-use ndarray::Array as NDArray;
+use ndarray::Array;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Path {
@@ -32,10 +31,6 @@ pub struct Graph {
 impl Graph {
   pub fn new(matrix: Vec<Vec<u32>>) -> Self {
     let size = matrix.len();
-    let indexes = Indexes {
-      rows: (0..size as u16).collect(),
-      cols: (0..size as u16).collect(),
-    };
 
     let data = matrix.into_iter().enumerate()
       .flat_map(|(i, row)| {
@@ -49,7 +44,7 @@ impl Graph {
       });
 
 
-    let arr = NDArray::from_iter(data).into_shape((size, size)).unwrap();
+    let arr = Array::from_iter(data).into_shape((size, size)).unwrap();
 
     let mut graph = Graph {
       matrix: arr,

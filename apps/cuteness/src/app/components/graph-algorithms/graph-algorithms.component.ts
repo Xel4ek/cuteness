@@ -48,7 +48,7 @@ export class GraphAlgorithmsComponent implements OnDestroy {
     {
       title: 'LittleWASM',
       method: 'LittleWASM',
-      limit: 100,
+      limit: 60,
     },
 
     {
@@ -84,7 +84,6 @@ export class GraphAlgorithmsComponent implements OnDestroy {
 
     this.worker.onmessage = ({ data }) => {
       this.processing = false;
-      console.warn(data.solution);
       this.solution = data.solution;
       this.executionTime = this.formatTime(data.timeElapsed);
       this.changeDetectorRef.detectChanges();

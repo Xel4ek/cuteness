@@ -18,21 +18,20 @@ const algorithms = {
   Genetic: GraphAlgorithms.solveTravelingSalesmanProblemGA,
   Little: GraphAlgorithms.solveTravelingSalesmanProblemLittle,
   LittleWASM: (graph: number[][]) => {
-    try {
-      const data = JSON.parse(
-        solve_traveling_salesman_problem_little_js(
-          JSON.stringify({ data: graph })
-        )
-      );
+     const data = JSON.parse(
+      solve_traveling_salesman_problem_little_js(
+        JSON.stringify({ data: graph })
+      )
+    );
 
-      return {
-        vertices: data.path,
-        distance: data.distance,
-        paths: data.steps,
-      }
-    }
-    catch  {
+    if (data.error) {
       return null;
+    }
+
+    return {
+      vertices: data.path,
+      distance: data.distance,
+      paths: data.steps,
     }
   }
 };

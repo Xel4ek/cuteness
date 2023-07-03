@@ -1,11 +1,9 @@
 use std::collections::BinaryHeap;
-use crate::block_path::BlockPath;
 use crate::calculate_penalties::CalculatePenalties;
 use crate::graph::{Graph};
 use crate::path_restore::PathRestore;
 use crate::redux::Redux;
 use crate::transform::Transform;
-use wasm_bindgen::prelude::*;
 
 use serde::{Serialize, Deserialize};
 
@@ -34,6 +32,7 @@ extern "C" {
 
 }
 
+#[allow(unused_macros)]
 macro_rules! log {
     ($($t:tt)*) => (log(&format!("{:#?}", $($t)*)))
 }
@@ -65,21 +64,32 @@ pub fn solve_traveling_salesman_problem_little_js(data: &str) -> String {
       matrix
     },
     Err(error) => {
-      todo!()
+      let error_response = serde_json::json!({
+        "error": format!("Failed to parse input JSON: {}", error)
+      });
+      return error_response.to_string();
     },
   };
-  log!(matrix);
 
   let res = solve_traveling_salesman_problem_little(matrix.data);
   match &res {
     Some(tsm_result) => {
-      log!(tsm_result);
       match serde_json::to_string(tsm_result) {
         Ok(json) => json,
-        Err(e) => format!("Failed to serialize TsmResult: {}", e),
+        Err(e) => {
+          let error_response = serde_json::json!({
+            "error": format!("Failed to serialize TsmResult: {}", e)
+          });
+          return error_response.to_string();
+        },
       }
     }
-    None => "No TSM result".to_string(),
+    None => {
+      let error_response = serde_json::json!({
+        "error": "No TSM result"
+      });
+      return error_response.to_string();
+    },
   }
 }
 
@@ -90,15 +100,12 @@ pub fn solve_traveling_salesman_problem_little(matrix: Vec<Vec<u32>>) -> Option<
   queue.push(Graph::new(matrix));
 
   while let Some(mut graph) = queue.pop() {
-    // println!("{:#?}", graph);
 
     if graph.lower_bound == u32::MAX as u64 {
       return None;
     }
 
-    // println!("{:?}", graph);
     if graph.matrix.len() == 1 {
-      // println!("{:?}", graph);
       if let Some(path) = graph.restore_path() {
         return Some(TsmResult {
           path,
@@ -114,7 +121,6 @@ pub fn solve_traveling_salesman_problem_little(matrix: Vec<Vec<u32>>) -> Option<
     queue.push(graph.transform(max_penalty_pos));
 
     if let Some(penalty) = penalty_option {
-      // graph.block_path(&max_penalty_pos);
       graph.redux(Some(penalty as u64));
       queue.push(graph);
     }

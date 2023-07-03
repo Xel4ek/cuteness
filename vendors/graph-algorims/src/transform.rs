@@ -1,8 +1,7 @@
-use js_sys::Array;
-use crate::block_path::BlockPath;
-use crate::graph::{Cell, Graph, Indexes, Path};
+use ndarray::Array;
+use crate::graph::{Cell, Graph, Path};
 use crate::redux::Redux;
-use ndarray::Array as NDArray;
+
 
 pub trait Transform {
   fn transform(&mut self, path: Path) -> Self;
@@ -35,7 +34,7 @@ impl Transform for Graph {
       });
 
     // println!("{:?}", size);
-    let new_matrix = NDArray::from_iter(iter).into_shape((size, size)).unwrap();
+    let new_matrix = Array::from_iter(iter).into_shape((size, size)).unwrap();
     // println!("{:#?}", new_matrix);
     // println!("--------------------->");
 
