@@ -23,6 +23,9 @@ web-sys = { version = "0.3.64", features = ['console'] }
 
 [profile.dev]
 debug = true
+opt-level = 3
+codegen-units = 1
+lto = true
 
 [profile.release]
 lto = true

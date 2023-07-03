@@ -33,6 +33,7 @@ impl Graph {
       path: Vec::new(),
       lower_bound: 0,
     };
+
     graph.redux(None);
     graph
   }

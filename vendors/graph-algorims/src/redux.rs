@@ -19,17 +19,20 @@ impl Redux for Vec<Vec<u32>> {
     // Subtract min from each row
     for i in 0..size {
       let min_row = self[i][..size].iter().filter(|&x| *x != u32::MAX).min().copied().unwrap_or(0);
+
       for j in 0..size {
         if self[i][j] != u32::MAX {
           self[i][j] -= min_row;
         }
       }
+
       lower_bound += min_row;
     }
 
     // Subtract min from each column
     for j in 0..size {
       let min_col = self[..size].iter().map(|row| row[j]).filter(|x| *x != u32::MAX).min().unwrap_or(0);
+
       for i in 0..size {
         if let Some(row) = self.get_mut(i) {
           if row[j] != u32::MAX {
@@ -37,6 +40,7 @@ impl Redux for Vec<Vec<u32>> {
           }
         }
       }
+
       lower_bound += min_col;
     }
 
@@ -45,7 +49,6 @@ impl Redux for Vec<Vec<u32>> {
       None => lower_bound as u64,
     }
   }
-
 }
 
 

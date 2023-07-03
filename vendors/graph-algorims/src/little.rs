@@ -89,8 +89,7 @@ pub fn solve_traveling_salesman_problem_little(matrix: Vec<Vec<u32>>) -> Option<
 
   let mut steps = 0;
   let mut queue = BinaryHeap::new();
-  let initial_graph = Graph::new(matrix);
-  queue.push(initial_graph);
+  queue.push(Graph::new(matrix));
 
   while let Some(mut graph) = queue.pop() {
     if graph.lower_bound == u32::MAX as u64 {

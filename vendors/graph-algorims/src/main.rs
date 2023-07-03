@@ -42,7 +42,7 @@ fn main() {
     vec![u32::MAX, u32::MAX, 24, u32::MAX, 51, u32::MAX, 37, 17, u32::MAX, u32::MAX, 81, u32::MAX, u32::MAX, u32::MAX, u32::MAX, 94, u32::MAX, 9, u32::MAX, 0]
   ];
 
-  let m4 = vec![
+  let m4: Vec<Vec<u32>> = vec![
     vec![
       4294967295,
       632,
