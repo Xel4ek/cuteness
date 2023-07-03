@@ -1,9 +1,10 @@
 /// <reference lib="webworker" />
 
 import { GraphAlgorithms, TsmResult } from '@cuteness/travelling-salesman-problem';
+import { solve_traveling_salesman_problem_little_js } from '../../../../../../vendors/graph-algorims/pkg';
 
 interface WorkerInputMessage {
-  method: 'Ants' | 'Genetic' | 'Little';
+  method: 'Ants' | 'Genetic' | 'Little' | 'LittleWASM';
   adjacencyMatrix: number[][];
 }
 
@@ -16,6 +17,19 @@ const algorithms = {
   Ants: GraphAlgorithms.solveTravelingSalesmanProblemACO,
   Genetic: GraphAlgorithms.solveTravelingSalesmanProblemGA,
   Little: GraphAlgorithms.solveTravelingSalesmanProblemLittle,
+  LittleWASM: (graph: number[][]) => {
+    const data = JSON.parse(
+        solve_traveling_salesman_problem_little_js(
+          JSON.stringify({ data: graph })
+        )
+      );
+
+    return {
+      vertices: data.path,
+      distance: data.distance,
+      paths: data.steps,
+    }
+  }
 };
 
 self.onmessage = ({ data }: { data: WorkerInputMessage }) => {

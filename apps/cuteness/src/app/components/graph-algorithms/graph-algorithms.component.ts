@@ -36,6 +36,7 @@ interface Method {
   styleUrls: ['./graph-algorithms.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
+
 export class GraphAlgorithmsComponent implements OnDestroy {
   protected adjacencyMatrix: number[][] = [];
   protected displayedColumns: string[] = [];
@@ -44,6 +45,12 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   protected lastSize = 0;
   protected chance = 0.5;
   protected methods: Method[] = [
+    {
+      title: 'LittleWASM',
+      method: 'LittleWASM',
+      limit: 100,
+    },
+
     {
       title: 'Little',
       method: 'Little',
@@ -77,6 +84,7 @@ export class GraphAlgorithmsComponent implements OnDestroy {
 
     this.worker.onmessage = ({ data }) => {
       this.processing = false;
+      console.warn(data.solution);
       this.solution = data.solution;
       this.executionTime = this.formatTime(data.timeElapsed);
       this.changeDetectorRef.detectChanges();

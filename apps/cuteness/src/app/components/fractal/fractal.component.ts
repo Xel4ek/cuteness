@@ -15,7 +15,9 @@ import { FullScreenDirective } from './directives/full-screen/full-screen.direct
 export class FractalComponent implements AfterViewInit {
   @ViewChild('canvasElement', { static: true }) private readonly canvasElement!: ElementRef<HTMLCanvasElement>;
 
-  constructor(private readonly fractalService: FractalService, private readonly ngZone: NgZone) {}
+  constructor(private readonly fractalService: FractalService, private readonly ngZone: NgZone) {
+
+  }
 
   public ngAfterViewInit(): void {
     this.fractalService.bindCanvas(this.canvasElement);

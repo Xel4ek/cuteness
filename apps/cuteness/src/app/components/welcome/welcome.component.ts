@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
 @Component({
   selector: 'cuteness-welcome',
   standalone: true,
@@ -10,5 +9,4 @@ import { CommonModule } from '@angular/common';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class WelcomeComponent {
-
 }
