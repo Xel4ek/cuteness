@@ -5,7 +5,6 @@ import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppRoutingModule } from './app.routes';
 import { MailLayoutModule } from './layouts/mail-layout/mail-layout.module';
-import { NgxGraphModule } from '@swimlane/ngx-graph';
 import { RSAComponent } from './modules/rsa/components/rsa/rsa.component';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -20,7 +19,6 @@ import { FormsModule } from '@angular/forms';
     AppRoutingModule,
     BrowserAnimationsModule,
     MailLayoutModule,
-    NgxGraphModule,
     MatTabsModule,
     MatFormFieldModule,
     MatInputModule,
