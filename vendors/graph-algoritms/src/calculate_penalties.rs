@@ -1,13 +1,13 @@
 use crate::graph::{Graph, Path};
 
 pub trait CalculatePenalties {
-  fn calculate_penalties(&self) -> (Option<u32>, Path);
+  fn calculate_penalties(&self) -> (Option<u32>, Option<Path>);
 }
 
 impl CalculatePenalties for Graph {
-  fn calculate_penalties(&self) -> (Option<u32>, Path) {
-    let mut max_penalty = 0;
-    let mut max_path = Path { row: 0, col: 0 };
+  fn calculate_penalties(&self) -> (Option<u32>, Option<Path>) {
+    let mut max_penalty = None;
+    let mut max_path = None;
 
     for (index, cell) in self.matrix.indexed_iter() {
       if cell.value == 0 {
@@ -28,20 +28,17 @@ impl CalculatePenalties for Graph {
             .unwrap_or(u32::MAX);
 
         let penalty = row_min.saturating_add(col_min);
-        if penalty > max_penalty {
-          max_penalty = penalty;
-          max_path = Path {
+
+        if max_penalty.map_or(true, |p| penalty > p) {
+          max_penalty = Some(penalty);
+          max_path = Some(Path {
             row: cell.row,
             col: cell.col,
-          };
+          });
         }
       }
     }
 
-    if max_penalty == u32::MAX {
-      (None, max_path)
-    } else {
-      (Some(max_penalty), max_path)
-    }
+    (max_penalty, max_path)
   }
 }

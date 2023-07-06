@@ -44,8 +44,8 @@ self.onmessage = ({ data }: { data: WorkerInputMessage }) => {
     let solution = null;
     try {
       solution = algorithm(adjacencyMatrix);
-    } catch {
-      console.warn('some error, resetting');
+    } catch (e) {
+      console.warn('some error', e);
     }
     const end = performance.now();
     const timeElapsed = end - start;

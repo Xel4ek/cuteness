@@ -115,10 +115,11 @@ pub fn solve_traveling_salesman_problem_little(matrix: Vec<Vec<u32>>) -> Option<
       }
       continue;
     }
-
     let (penalty_option, max_penalty_pos) = graph.calculate_penalties();
 
-    queue.push(graph.transform(max_penalty_pos));
+    if let Some(position) = max_penalty_pos {
+      queue.push(graph.transform(position));
+    }
 
     if let Some(penalty) = penalty_option {
       graph.redux(Some(penalty as u64));

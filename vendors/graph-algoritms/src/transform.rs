@@ -31,7 +31,8 @@ impl Transform for Graph {
         }
       });
 
-    let new_matrix = Array::from_iter(iter).into_shape((size, size)).unwrap();
+    let test = Array::from_iter(iter);
+    let new_matrix = test.into_shape((size, size)).unwrap();
 
     let mut new_path = self.path.clone();
     new_path.push(path.clone());
