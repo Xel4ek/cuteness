@@ -1,20 +1,52 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { GraphModule } from '@swimlane/ngx-graph';
-import { Edge } from '@swimlane/ngx-graph/lib/models/edge.model';
-import { Node } from '@swimlane/ngx-graph/lib/models/node.model';
+import { Component, Input } from '@angular/core';
+import { EChartsOption } from 'echarts';
+import { NGX_ECHARTS_CONFIG, NgxEchartsModule } from 'ngx-echarts';
+import { GraphEdgeItemOption, GraphNodeItemOption } from 'echarts/types/src/chart/graph/GraphSeries';
+import { NgIf } from '@angular/common';
 
 @Component({
   selector: 'cuteness-graph[adjacencyMatrix]',
-  standalone: true,
-  imports: [CommonModule, GraphModule],
   templateUrl: './graph.component.html',
   styleUrls: ['./graph.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [NgxEchartsModule, NgIf],
+  providers: [
+    {
+      provide: NGX_ECHARTS_CONFIG,
+      useFactory: () => ({ echarts: () => import('echarts') }),
+    },
+  ],
 })
 export class GraphComponent {
-  protected links: (Edge & { weight: number; used?: boolean })[] = [];
-  protected nodes: Node[] = [];
+  protected links: GraphEdgeItemOption[] = [];
+  protected mergeOptions: EChartsOption = {};
+  protected nodes: GraphNodeItemOption[] = [];
+
+  protected chartOption: EChartsOption = {
+    tooltip: {},
+    series: [
+      {
+        name: 'Les Miserables',
+        type: 'graph',
+        layout: 'circular',
+        animationDurationUpdate: 1500,
+        animationEasingUpdate: 'quinticInOut',
+        data: this.nodes,
+        links: this.links,
+        roam: true,
+        label: {
+          position: 'right',
+        },
+        lineStyle: {
+          curveness: 0.1,
+        },
+        emphasis: {
+          focus: 'adjacency',
+        },
+      },
+    ],
+  };
+
   private _adjacencyMatrix: number[][] = [];
   private _solution: number[] = [];
 
@@ -34,6 +66,7 @@ export class GraphComponent {
   public set adjacencyMatrix(adjacencyMatrix: number[][]) {
     this._adjacencyMatrix = adjacencyMatrix;
     this.generate();
+    this.chartOption = { ...this.chartOption };
   }
 
   public get adjacencyMatrix(): number[][] {
@@ -41,13 +74,13 @@ export class GraphComponent {
   }
 
   private generate() {
-    this.links = [];
-    this.nodes = [];
+    this.links.length = 0;
+    this.nodes.length = 0;
 
     for (let i = 0; i < this.adjacencyMatrix.length; i++) {
       this.nodes.push({
         id: i.toString(),
-        label: `${i}`,
+        name: `${i}`,
       });
     }
 
@@ -55,30 +88,29 @@ export class GraphComponent {
       for (let j = 0; j < this.adjacencyMatrix[i].length; j++) {
         if (this.adjacencyMatrix[i][j] > 0) {
           this.links.push({
-            id: `link${i}-${j}`,
             source: i.toString(),
             target: j.toString(),
-            label: this.adjacencyMatrix[i][j].toString(),
-            weight: this.adjacencyMatrix[i][j],
+            symbol: ['none', 'arrow'],
+            label: {
+              formatter: this.adjacencyMatrix[i][j].toString(),
+            },
+            value: this.adjacencyMatrix[i][j],
           });
         }
       }
     }
   }
 
-  private getRandomColor(): string {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-
-    return color;
-  }
-
   private processLinks() {
-    this.links.forEach((link) => (link.used = false));
+
+    const links: GraphEdgeItemOption[] = this.links.map((link) => ({
+      ...link,
+      lineStyle: {
+        ...link.lineStyle,
+        opacity: 0.1,
+        color: 'rgb(173,173,173)',
+      },
+    }));
 
     if (this.solution) {
       for (let i = 0; i < this.solution.length - 1; i++) {
@@ -87,11 +119,25 @@ export class GraphComponent {
 
         this.links.forEach((link) => {
           if (link.source === source && link.target === target) {
-            link.used = true;
+            links.push({
+              ...link,
+              lineStyle: {
+                ...link.lineStyle,
+                opacity: 1,
+                color: '#179809',
+              },
+            });
           }
         });
       }
-      this.links = [...this.links];
     }
+
+    this.mergeOptions = {
+      series: [
+        {
+          links,
+        },
+      ],
+    };
   }
 }

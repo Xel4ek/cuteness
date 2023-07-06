@@ -1,24 +1,26 @@
-<div>
+<div class="slider__block">
   Size: {{size}}
   <mat-slider
-          class="example-margin"
-          [max]="selected.limit"
-          [min]="3"
-          [step]="1"
+    class="example-slider"
+    [max]="selected.limit"
+    [min]="3"
+    [step]="1"
   >
     <input matSliderThumb [(ngModel)]="size">
   </mat-slider>
+</div>
+<div class="slider__block">
   <span>Fill: {{ chance * 100 | number: '.0-0' }} %</span>
   <mat-slider
-          class="example-margin"
-          [max]="1"
-          [min]="0"
-          [step]=".01"
+    class="example-slider"
+    [max]="1"
+    [min]="0"
+    [step]=".01"
   >
     <input matSliderThumb [(ngModel)]="chance">
   </mat-slider>
 </div>
-<div>
+<div style="display: flex; align-items: center; height: 80px">
   <button
     mat-button
     (click)="generateMatrix()"
@@ -36,7 +38,7 @@
   >
     Calc
   </button>
-  <mat-form-field  class="button" *ngIf="adjacencyMatrix.length">
+  <mat-form-field class="button" *ngIf="adjacencyMatrix.length">
     <mat-label>Choose method</mat-label>
     <mat-select [(value)]="selected" (valueChange)="resetGraph()" [disabled]="processing">
       <mat-option *ngFor="let method of methods" [value]="method">
@@ -44,16 +46,17 @@
       </mat-option>
     </mat-select>
   </mat-form-field>
-  <div *ngIf="processing" class="info" >
-    <mat-spinner class="spinner"></mat-spinner> {{ elapsedTime$ | async }}
+</div>
+<div *ngIf="processing" class="info">
+  <mat-spinner class="spinner"></mat-spinner>
+  {{ elapsedTime$ | async }}
+</div>
+<div *ngIf="solution">
+  <div class="info">
+    [{{ solution.paths | number }}] ({{ executionTime }}) Distance: {{ solution.distance | number: '.0-2' }}
   </div>
-  <div *ngIf="solution" >
-    <div class="info">
-      [{{ solution.paths | number }}] ({{ executionTime }}) Distance: {{ solution.distance | number: '.0-2' }}
-    </div>
-    <div class="info">
-      {{ solution.vertices.join(' ➢ ') }}
-    </div>
+  <div class="info">
+    {{ solution.vertices.join(' ➢ ') }}
   </div>
 </div>
 
@@ -62,18 +65,14 @@
 </div>
 <div style="overflow-x:auto;" *ngIf="adjacencyMatrix.length">
   <cuteness-graph
-    *ngIf="lastSize < 21 else noGraph"
     [adjacencyMatrix]="adjacencyMatrix"
     [solution]="solution?.vertices"
-  ></cuteness-graph>
-
-  <table mat-table [dataSource]="adjacencyMatrix" class="mat-elevation-z8">
-    <ng-container *ngFor="let column of displayedColumns; index as colIndex" [matColumnDef]="column">
-      <td mat-cell *matCellDef="let row">{{row[colIndex] | number: '.0-2'}}</td>
-    </ng-container>
-
-    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-  </table>
+    [style.margin-bottom.rem]="1"
+  />
+  <cuteness-matrix
+    [adjacencyMatrix]="adjacencyMatrix"
+    [solution]="solution?.vertices"
+  />
 </div>
 
 <ng-template #noGraph>

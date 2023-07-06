@@ -1,0 +1,46 @@
+:host {
+  display: block;
+  max-width: 100%;
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  box-sizing: border-box;
+  border: 1px solid rgba(136, 136, 136, 0.12);
+}
+.copy-button {
+  position: absolute;
+  top: .3rem;
+  right: .3rem;
+}
+
+.table-content {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 2rem;
+  overflow-x: auto;
+}
+
+table {
+  table-layout: fixed;
+  border-collapse: collapse;
+  box-sizing: border-box;
+}
+
+td.cell {
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 2px;
+}
+
+.infinity {
+  opacity: .5;
+  display: inline-block;
+  transform: translateY(2px);
+}
+
+.used {
+  background-color: rgba(125, 204, 48, 0.5);
+}
+

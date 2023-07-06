@@ -1,0 +1,14 @@
+<button mat-icon-button (click)="copyTableToClipboard()" class="copy-button">
+  <mat-icon>file_copy</mat-icon>
+</button>
+<div class="table-content">
+  <table>
+    <tr *ngFor="let row of adjacencyMatrix; index as i">
+      <td *ngFor="let cell of row; index as j" class="cell" [class.used]="inSolution(i, j)">
+        <span [matTooltip]="(cell | number) ?? ''" [class.infinity]="cell === 0">
+          {{ cell | number | replaceZeroWithInfinity }}
+        </span>
+      </td>
+    </tr>
+  </table>
+</div>

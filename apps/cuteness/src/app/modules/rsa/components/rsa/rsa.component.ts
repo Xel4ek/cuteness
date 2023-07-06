@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { RSA, RSAKey } from '@cuteness/rsa';
+import { generateKeyPair } from 'rsa';
 
 @Component({
   selector: 'cuteness-rsa',
@@ -7,9 +7,9 @@ import { RSA, RSAKey } from '@cuteness/rsa';
   styleUrls: ['./rsa.component.scss'],
 })
 export class RSAComponent {
-  private readonly RSA = new RSA();
-  private privateRSAKey?: RSAKey;
-  private publicRSAKey?: RSAKey;
+  // private readonly RSA = new RSA();
+  // private privateRSAKey?: RSAKey;
+  // private publicRSAKey?: RSAKey;
 
 
   protected privateKey?: string;
@@ -18,14 +18,21 @@ export class RSAComponent {
   protected encryptedText?: string;
   protected decryptedText?: string;
 
+  constructor() {
+    this.test();
+  }
 
+  public async test() {
+    const data = await generateKeyPair(1024);
+    console.log(data);
+  }
   public generateKeys() {
-    const { publicKey, privateKey } = this.RSA.generateKeys();
+    // const { publicKey, privateKey } = this.RSA.generateKeys();
 
-    this.publicRSAKey = publicKey;
-    this.privateRSAKey = privateKey;
-    this.privateKey = privateKey.toPem();
-    this.publicKey = privateKey.toPem();
+    // this.publicRSAKey = publicKey;
+    // this.privateRSAKey = privateKey;
+    // this.privateKey = privateKey.toPem();
+    // this.publicKey = privateKey.toPem();
   }
 
   public async encryptText() {

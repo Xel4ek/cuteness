@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy } from
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { Route } from '@angular/router';
-import { GraphComponent } from '../graph/graph.component';
 import { MatTableModule } from '@angular/material/table';
 import { MatSliderModule } from '@angular/material/slider';
 import { FormsModule } from '@angular/forms';
@@ -11,6 +10,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { GraphHelper, TsmResult } from '@cuteness/travelling-salesman-problem';
 import { interval, map, Observable, takeWhile } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { GraphComponent } from '../graph/graph.component';
+import { MatrixComponent } from '../matrix/matrix.component';
 
 interface Method {
   title: string;
@@ -24,19 +25,19 @@ interface Method {
   imports: [
     CommonModule,
     MatButtonModule,
-    GraphComponent,
     MatTableModule,
     MatSliderModule,
     FormsModule,
     MatFormFieldModule,
     MatSelectModule,
     MatProgressSpinnerModule,
+    GraphComponent,
+    MatrixComponent,
   ],
   templateUrl: './graph-algorithms.component.html',
   styleUrls: ['./graph-algorithms.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-
 export class GraphAlgorithmsComponent implements OnDestroy {
   protected adjacencyMatrix: number[][] = [];
   protected displayedColumns: string[] = [];
@@ -72,13 +73,10 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   protected elapsedTime$: Observable<string>;
   protected selected: Method;
 
-
   private worker: Worker;
   private startTime = 0;
 
-  constructor(
-    private readonly changeDetectorRef: ChangeDetectorRef,
-    ) {
+  constructor(private readonly changeDetectorRef: ChangeDetectorRef) {
     this.selected = this.methods[0];
     this.worker = new Worker(new URL('./tsp.worker.ts', import.meta.url));
 
@@ -95,17 +93,15 @@ export class GraphAlgorithmsComponent implements OnDestroy {
     );
   }
 
-
   public ngOnDestroy(): void {
     this.worker.terminate();
   }
 
-
   public resetGraph() {
-      if (this.selected.limit < this.size) {
-        this.size = this.selected.limit;
-        this.generateMatrix();
-      }
+    if (this.selected.limit < this.size) {
+      this.size = this.selected.limit;
+      this.generateMatrix();
+    }
   }
 
   protected generateMatrix() {
