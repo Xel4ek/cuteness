@@ -19,18 +19,24 @@
       padding-right: 1rem;
     }
   }
-  .slider__block {
-    max-width: 50%;
-    box-sizing: border-box;
-    white-space: nowrap;
 
-    &:first-child {
-      margin-right: 1rem;
-    }
+  .slider__group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .slider__block {
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
 
     .example-slider {
       width: 100%;
-
+      min-width: 200px;
+      display: block;
+      margin: 0 1rem;
     }
   }
 

@@ -1,31 +1,33 @@
-<div class="slider__block">
-  Size: {{size}}
-  <mat-slider
-    class="example-slider"
-    [max]="selected.limit"
-    [min]="3"
-    [step]="1"
-  >
-    <input matSliderThumb [(ngModel)]="size">
-  </mat-slider>
-</div>
-<div class="slider__block">
-  <span>Fill: {{ chance * 100 | number: '.0-0' }} %</span>
-  <mat-slider
-    class="example-slider"
-    [max]="1"
-    [min]="0"
-    [step]=".01"
-  >
-    <input matSliderThumb [(ngModel)]="chance">
-  </mat-slider>
+<div class="slider__group">
+  <div class="slider__block">
+    Size: {{size}}
+    <mat-slider
+            class="example-slider"
+            [max]="selected.limit"
+            [min]="3"
+            [step]="1"
+    >
+      <input matSliderThumb [(ngModel)]="size">
+    </mat-slider>
+  </div>
+  <div class="slider__block">
+    <span>Fill: {{ chance * 100 | number: '.0-0' }} %</span>
+    <mat-slider
+            class="example-slider"
+            [max]="1"
+            [min]="0"
+            [step]=".01"
+    >
+      <input matSliderThumb [(ngModel)]="chance">
+    </mat-slider>
+  </div>
 </div>
 <div style="display: flex; align-items: center; height: 80px">
   <button
-    mat-button
-    (click)="generateMatrix()"
-    [disabled]="processing"
-    class="button"
+          mat-button
+          (click)="generateMatrix()"
+          [disabled]="processing"
+          class="button"
   >
     Generate
   </button>
@@ -38,7 +40,7 @@
   >
     Calc
   </button>
-  <mat-form-field class="button" *ngIf="adjacencyMatrix.length">
+  <mat-form-field appearance="outline" class="button" *ngIf="adjacencyMatrix.length">
     <mat-label>Choose method</mat-label>
     <mat-select [(value)]="selected" (valueChange)="resetGraph()" [disabled]="processing">
       <mat-option *ngFor="let method of methods" [value]="method">
@@ -65,13 +67,13 @@
 </div>
 <div style="overflow-x:auto;" *ngIf="adjacencyMatrix.length">
   <cuteness-graph
-    [adjacencyMatrix]="adjacencyMatrix"
-    [solution]="solution?.vertices"
-    [style.margin-bottom.rem]="1"
+          [adjacencyMatrix]="adjacencyMatrix"
+          [solution]="solution?.vertices"
+          [style.margin-bottom.rem]="1"
   />
   <cuteness-matrix
-    [adjacencyMatrix]="adjacencyMatrix"
-    [solution]="solution?.vertices"
+          [adjacencyMatrix]="adjacencyMatrix"
+          [solution]="solution?.vertices"
   />
 </div>
 
