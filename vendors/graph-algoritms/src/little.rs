@@ -4,8 +4,13 @@ use crate::graph::{Graph};
 use crate::path_restore::PathRestore;
 use crate::redux::Redux;
 use crate::transform::Transform;
+use wasm_bindgen::prelude::*;
 
 use serde::{Serialize, Deserialize};
+
+#[cfg(target_arch = "wasm32")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug)]
@@ -22,9 +27,6 @@ pub struct TsmResult {
   pub steps: u64,
 }
 
-use wasm_bindgen::prelude::*;
-
-
 #[wasm_bindgen]
 extern "C" {
   #[wasm_bindgen(js_namespace = console)]
@@ -36,18 +38,6 @@ extern "C" {
 macro_rules! log {
     ($($t:tt)*) => (log(&format!("{:#?}", $($t)*)))
 }
-
-
-#[wasm_bindgen]
-extern "C" {
-  fn alert(s: &str);
-}
-
-#[wasm_bindgen]
-pub fn greet(name: &str) {
-  alert(&format!("Hello, {}!", name));
-}
-
 
 #[wasm_bindgen]
 pub fn solve_traveling_salesman_problem_little_js(data: &str) -> String {
