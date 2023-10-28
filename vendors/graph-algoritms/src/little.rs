@@ -8,9 +8,6 @@ use wasm_bindgen::prelude::*;
 
 use serde::{Serialize, Deserialize};
 
-#[cfg(target_arch = "wasm32")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug)]
