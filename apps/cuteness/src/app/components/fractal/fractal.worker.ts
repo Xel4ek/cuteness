@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-import { renderMandelbrot } from 'graph-drawer'
+import { renderMandelbrot } from 'graph-drawer';
 interface WorkerData {
   canvasWidth: number;
   canvasHeight: number;

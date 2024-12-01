@@ -2,7 +2,7 @@ use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::time::Instant;
-use graph_algoritms::solve_traveling_salesman_problem_little;
+use graph_algorithms::solve_traveling_salesman_problem_little;
 
 fn main() -> std::io::Result<()> {
   // Проверка наличия аргументов командной строки

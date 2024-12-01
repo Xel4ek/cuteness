@@ -27,8 +27,16 @@
         "quotes": ["warn", "single"],
         "padding-line-between-statements": [
           "error",
-          { "blankLine": "always", "prev": "*", "next": "return" },
-          { "blankLine": "any", "prev": ["const", "let", "var"], "next": ["const", "let", "var"] }
+          {
+            "blankLine": "always",
+            "prev": "*",
+            "next": "return"
+          },
+          {
+            "blankLine": "any",
+            "prev": ["const", "let", "var"],
+            "next": ["const", "let", "var"]
+          }
         ],
         "curly": ["error", "all"]
       }
@@ -49,13 +57,18 @@
               "parameterProperties": "explicit"
             }
           }
-        ]
+        ],
+        "@typescript-eslint/no-extra-semi": "error",
+        "no-extra-semi": "off"
       }
     },
     {
       "files": ["*.js", "*.jsx"],
       "extends": ["plugin:@nx/javascript"],
-      "rules": {}
+      "rules": {
+        "@typescript-eslint/no-extra-semi": "error",
+        "no-extra-semi": "off"
+      }
     }
   ]
 }

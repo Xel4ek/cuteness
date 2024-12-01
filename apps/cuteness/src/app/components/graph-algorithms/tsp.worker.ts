@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
 import { GraphAlgorithms, TsmResult } from '@cuteness/travelling-salesman-problem';
-import { solve_traveling_salesman_problem_little_js } from 'grapth-aloritms';
+import { solve_traveling_salesman_problem_little_js } from 'grapth-alorithms';
 
 interface WorkerInputMessage {
   method: 'Ants' | 'Genetic' | 'Little' | 'LittleWASM';

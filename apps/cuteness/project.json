@@ -7,26 +7,16 @@
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:browser",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/cuteness",
         "index": "apps/cuteness/src/index.html",
         "main": "apps/cuteness/src/main.ts",
-        "polyfills": [
-          "zone.js"
-        ],
+        "polyfills": ["zone.js"],
         "tsConfig": "apps/cuteness/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
-        "assets": [
-          "apps/cuteness/src/favicon.ico",
-          "apps/cuteness/src/assets"
-        ],
-        "styles": [
-          "@angular/material/prebuilt-themes/purple-green.css",
-          "apps/cuteness/src/styles.scss"
-        ],
+        "assets": ["apps/cuteness/src/favicon.ico", "apps/cuteness/src/assets"],
+        "styles": ["@angular/material/prebuilt-themes/purple-green.css", "apps/cuteness/src/styles.scss"],
         "scripts": [],
         "webWorkerTsConfig": "apps/cuteness/tsconfig.worker.json"
       },
@@ -71,10 +61,10 @@
       "executor": "@angular-devkit/build-angular:dev-server",
       "configurations": {
         "production": {
-          "browserTarget": "cuteness:build:production"
+          "buildTarget": "cuteness:build:production"
         },
         "development": {
-          "browserTarget": "cuteness:build:development"
+          "buildTarget": "cuteness:build:development"
         }
       },
       "defaultConfiguration": "development"
@@ -82,36 +72,19 @@
     "extract-i18n": {
       "executor": "@angular-devkit/build-angular:extract-i18n",
       "options": {
-        "browserTarget": "cuteness:build"
+        "buildTarget": "cuteness:build"
       }
     },
     "lint": {
-      "executor": "@nx/linter:eslint",
-      "outputs": [
-        "{options.outputFile}"
-      ],
-      "options": {
-        "lintFilePatterns": [
-          "apps/cuteness/**/*.ts",
-          "apps/cuteness/**/*.html"
-        ]
-      }
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"]
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/cuteness/jest.config.ts",
-        "passWithNoTests": true,
         "webWorkerTsConfig": "apps/cuteness/tsconfig.worker.json"
-      },
-      "configurations": {
-        "ci": {
-          "ci": true,
-          "codeCoverage": true
-        }
       }
     },
     "deploy": {
