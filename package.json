@@ -5,7 +5,7 @@
   "scripts": {
     "start": "nx serve cuteness",
     "build": "nx build cuteness",
-    "deploy": "nx deploy cuteness --base-href=/cuteness/"
+    "deploy": "nx deploy cuteness"
   },
   "private": true,
   "dependencies": {
@@ -19,8 +19,8 @@
     "@angular/platform-browser": "18.2.9",
     "@angular/platform-browser-dynamic": "18.2.9",
     "@angular/router": "18.2.9",
+    "@angular/service-worker": "18.2.9",
     "@nx/angular": "20.1.4",
-    "angular-cli-ghpages": "^1.0.6",
     "echarts": "^5.4.2",
     "graph-drawer": "file:vendors/graph/pkg",
     "grapth-alorithms": "file:vendors/graph-algorithms/pkg",
@@ -50,6 +50,7 @@
     "@typescript-eslint/eslint-plugin": "7.18.0",
     "@typescript-eslint/parser": "7.18.0",
     "@typescript-eslint/utils": "^7.16.0",
+    "angular-cli-ghpages": "^2.0.3",
     "assemblyscript": "^0.27.5",
     "cypress": "13.16.0",
     "eslint": "8.57.1",
