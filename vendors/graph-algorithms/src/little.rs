@@ -1,33 +1,29 @@
-use std::collections::BinaryHeap;
 use crate::calculate_penalties::CalculatePenalties;
-use crate::graph::{Graph};
+use crate::graph::Graph;
 use crate::path_restore::PathRestore;
 use crate::redux::Redux;
 use crate::transform::Transform;
+use std::collections::BinaryHeap;
 use wasm_bindgen::prelude::*;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-
-#[derive(Serialize, Deserialize)]
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Matrix {
-  data: Vec<Vec<u32>>,
+    data: Vec<Vec<u32>>,
 }
 
-
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TsmResult {
-  pub path: Vec<u16>,
-  pub distance: u64,
-  pub steps: u64,
+    pub path: Vec<u16>,
+    pub distance: u64,
+    pub steps: u64,
 }
 
 #[wasm_bindgen]
 extern "C" {
-  #[wasm_bindgen(js_namespace = console)]
-  fn log(s: &str);
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
 }
 
 #[allow(unused_macros)]
@@ -37,83 +33,79 @@ macro_rules! log {
 
 #[wasm_bindgen]
 pub fn solve_traveling_salesman_problem_little_js(data: &str) -> String {
-  let result = serde_json::from_str::<Matrix>(data);
-  let matrix = match result {
-    Ok(mut matrix) => {
-      for row in &mut matrix.data {
-        for value in row {
-          if *value == 0 {
-            *value = u32::MAX;
-          }
+    let result = serde_json::from_str::<Matrix>(data);
+    let matrix = match result {
+        Ok(mut matrix) => {
+            for row in &mut matrix.data {
+                for value in row {
+                    if *value == 0 {
+                        *value = u32::MAX;
+                    }
+                }
+            }
+            matrix
         }
-      }
-      matrix
-    },
-    Err(error) => {
-      let error_response = serde_json::json!({
-        "error": format!("Failed to parse input JSON: {}", error)
-      });
-      return error_response.to_string();
-    },
-  };
+        Err(error) => {
+            let error_response = serde_json::json!({
+              "error": format!("Failed to parse input JSON: {}", error)
+            });
+            return error_response.to_string();
+        }
+    };
 
-  let res = solve_traveling_salesman_problem_little(matrix.data);
-  match &res {
-    Some(tsm_result) => {
-      match serde_json::to_string(tsm_result) {
-        Ok(json) => json,
-        Err(e) => {
-          let error_response = serde_json::json!({
-            "error": format!("Failed to serialize TsmResult: {}", e)
-          });
-          return error_response.to_string();
+    let res = solve_traveling_salesman_problem_little(matrix.data);
+    match &res {
+        Some(tsm_result) => match serde_json::to_string(tsm_result) {
+            Ok(json) => json,
+            Err(e) => {
+                let error_response = serde_json::json!({
+                  "error": format!("Failed to serialize TsmResult: {}", e)
+                });
+                return error_response.to_string();
+            }
         },
-      }
+        None => {
+            let error_response = serde_json::json!({
+              "error": "No TSM result"
+            });
+            return error_response.to_string();
+        }
     }
-    None => {
-      let error_response = serde_json::json!({
-        "error": "No TSM result"
-      });
-      return error_response.to_string();
-    },
-  }
 }
 
 pub fn solve_traveling_salesman_problem_little(matrix: Vec<Vec<u32>>) -> Option<TsmResult> {
+    let mut steps = 0;
+    let mut queue = BinaryHeap::new();
+    queue.push(Graph::new(matrix));
 
-  let mut steps = 0;
-  let mut queue = BinaryHeap::new();
-  queue.push(Graph::new(matrix));
+    while let Some(mut graph) = queue.pop() {
+        if graph.lower_bound == u32::MAX as u64 {
+            return None;
+        }
 
-  while let Some(mut graph) = queue.pop() {
+        if graph.matrix.len() == 1 {
+            if let Some(path) = graph.restore_path() {
+                return Some(TsmResult {
+                    path,
+                    distance: graph.lower_bound,
+                    steps,
+                });
+            }
+            continue;
+        }
+        let (penalty_option, max_penalty_pos) = graph.calculate_penalties();
 
-    if graph.lower_bound == u32::MAX as u64 {
-      return None;
+        if let Some(position) = max_penalty_pos {
+            queue.push(graph.transform(position));
+        }
+
+        if let Some(penalty) = penalty_option {
+            graph.redux(Some(penalty as u64));
+            queue.push(graph);
+        }
+
+        steps += 1;
     }
 
-    if graph.matrix.len() == 1 {
-      if let Some(path) = graph.restore_path() {
-        return Some(TsmResult {
-          path,
-          distance: graph.lower_bound,
-          steps,
-        });
-      }
-      continue;
-    }
-    let (penalty_option, max_penalty_pos) = graph.calculate_penalties();
-
-    if let Some(position) = max_penalty_pos {
-      queue.push(graph.transform(position));
-    }
-
-    if let Some(penalty) = penalty_option {
-      graph.redux(Some(penalty as u64));
-      queue.push(graph);
-    }
-
-    steps += 1;
-  }
-
-  None
+    None
 }
