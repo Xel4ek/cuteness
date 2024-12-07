@@ -4,16 +4,16 @@ import { NGX_ECHARTS_CONFIG, NgxEchartsModule } from 'ngx-echarts';
 import { GraphEdgeItemOption, GraphNodeItemOption } from 'echarts/types/src/chart/graph/GraphSeries';
 
 @Component({
-    selector: 'cuteness-graph[adjacencyMatrix]',
-    templateUrl: './graph.component.html',
-    styleUrls: ['./graph.component.scss'],
-    imports: [NgxEchartsModule],
-    providers: [
-        {
-            provide: NGX_ECHARTS_CONFIG,
-            useFactory: () => ({ echarts: () => import('echarts') }),
-        },
-    ]
+  selector: 'cuteness-graph[adjacencyMatrix]',
+  templateUrl: './graph.component.html',
+  styleUrls: ['./graph.component.scss'],
+  imports: [NgxEchartsModule],
+  providers: [
+    {
+      provide: NGX_ECHARTS_CONFIG,
+      useFactory: () => ({ echarts: () => import('echarts') }),
+    },
+  ],
 })
 export class GraphComponent {
   protected links: GraphEdgeItemOption[] = [];
@@ -46,18 +46,9 @@ export class GraphComponent {
   };
 
   private _adjacencyMatrix: number[][] = [];
-  private _solution: number[] = [];
 
-  @Input()
-  public set solution(solution: number[] | undefined) {
-    if (Array.isArray(solution)) {
-      this._solution = solution;
-      this.processLinks();
-    }
-  }
-
-  public get solution() {
-    return this._solution;
+  public get adjacencyMatrix(): number[][] {
+    return this._adjacencyMatrix;
   }
 
   @Input()
@@ -67,8 +58,18 @@ export class GraphComponent {
     this.chartOption = { ...this.chartOption };
   }
 
-  public get adjacencyMatrix(): number[][] {
-    return this._adjacencyMatrix;
+  private _solution: number[] = [];
+
+  public get solution() {
+    return this._solution;
+  }
+
+  @Input()
+  public set solution(solution: number[] | undefined) {
+    if (Array.isArray(solution)) {
+      this._solution = solution;
+      this.processLinks();
+    }
   }
 
   private generate() {
@@ -100,7 +101,6 @@ export class GraphComponent {
   }
 
   private processLinks() {
-
     const links: GraphEdgeItemOption[] = this.links.map((link) => ({
       ...link,
       lineStyle: {

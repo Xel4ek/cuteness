@@ -10,8 +10,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { GraphHelper, TsmResult } from '@cuteness/travelling-salesman-problem';
 import { animationFrameScheduler, interval, map, Observable, takeWhile } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { GraphComponent } from '../graph/graph.component';
-import { MatrixComponent } from '../matrix/matrix.component';
+import { GraphComponent } from './graph/graph.component';
+import { MatrixComponent } from './matrix/matrix.component';
 
 interface Method {
   title: string;
