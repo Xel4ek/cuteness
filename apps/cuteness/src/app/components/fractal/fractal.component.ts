@@ -2,8 +2,10 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  ElementRef, HostListener,
-  ViewChild
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Route } from '@angular/router';
@@ -12,21 +14,21 @@ import { MatButtonModule } from '@angular/material/button';
 
 
 @Component({
-    selector: 'cuteness-fractal',
-    imports: [CommonModule, FullScreenDirective, MatButtonModule],
-    templateUrl: './fractal.component.html',
-    styleUrls: ['./fractal.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush
+  selector: 'cuteness-fractal',
+  imports: [CommonModule, FullScreenDirective, MatButtonModule],
+  templateUrl: './fractal.component.html',
+  styleUrls: ['./fractal.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FractalComponent implements AfterViewInit {
-  private readonly worker: Worker;
+export class FractalComponent implements AfterViewInit, OnDestroy {
+  private readonly worker: Worker = new Worker(new URL('./fractal.worker.ts', import.meta.url));
   private lock = false;
 
   @ViewChild('canvasElement', { static: true })
   private readonly canvasElement!: ElementRef<HTMLCanvasElement>;
 
-  constructor() {
-    this.worker = new Worker(new URL('./fractal.worker.ts', import.meta.url));
+  public ngOnDestroy(): void {
+    this.worker.terminate();
   }
 
   @HostListener('touchmove', ['$event'])
@@ -56,11 +58,12 @@ export class FractalComponent implements AfterViewInit {
     const fractalX = (x / this.canvasElement.nativeElement.width) * 3.5 - 2;
     const fractalY = (y / this.canvasElement.nativeElement.height) * 3 - 1.5;
 
-
-
     this.worker.postMessage({
       canvasWidth: this.canvasElement.nativeElement.width,
-      canvasHeight: this.canvasElement.nativeElement.height, fractalX, fractalY });
+      canvasHeight: this.canvasElement.nativeElement.height,
+      fractalX,
+      fractalY,
+    });
   }
 
   public ngAfterViewInit(): void {
@@ -69,7 +72,7 @@ export class FractalComponent implements AfterViewInit {
       throw new Error('Oops');
     }
 
-    const iData = ctx.createImageData(this.canvasElement.nativeElement.width, this.canvasElement.nativeElement.height)
+    const iData = ctx.createImageData(this.canvasElement.nativeElement.width, this.canvasElement.nativeElement.height);
     this.worker.onmessage = ({ data }) => {
       iData.data.set(data);
       ctx.putImageData(iData, 0, 0);
@@ -79,8 +82,9 @@ export class FractalComponent implements AfterViewInit {
     setTimeout(() => {
       ctx.fill();
       this.draw({ clientY: 0, clientX: 0 } as any);
-    }, 1000)
+    }, 1000);
   }
 }
+
 
 export default [{ path: '', component: FractalComponent }] as Route[];

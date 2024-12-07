@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { Route } from '@angular/router';
@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { GraphHelper, TsmResult } from '@cuteness/travelling-salesman-problem';
-import { interval, map, Observable, takeWhile } from 'rxjs';
+import { animationFrameScheduler, interval, map, Observable, takeWhile } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GraphComponent } from '../graph/graph.component';
 import { MatrixComponent } from '../matrix/matrix.component';
@@ -20,24 +20,24 @@ interface Method {
 }
 
 @Component({
-    selector: 'cuteness-graph-algorithms',
-    imports: [
-        CommonModule,
-        MatButtonModule,
-        MatTableModule,
-        MatSliderModule,
-        FormsModule,
-        MatFormFieldModule,
-        MatSelectModule,
-        MatProgressSpinnerModule,
-        GraphComponent,
-        MatrixComponent,
-    ],
-    templateUrl: './graph-algorithms.component.html',
-    styleUrls: ['./graph-algorithms.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush
+  selector: 'cuteness-graph-algorithms',
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatTableModule,
+    MatSliderModule,
+    FormsModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatProgressSpinnerModule,
+    GraphComponent,
+    MatrixComponent,
+  ],
+  templateUrl: './graph-algorithms.component.html',
+  styleUrls: ['./graph-algorithms.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GraphAlgorithmsComponent implements OnDestroy {
+export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
   protected adjacencyMatrix: number[][] = [];
   protected displayedColumns: string[] = [];
   protected solution?: TsmResult | null;
@@ -69,27 +69,27 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   ];
   protected executionTime?: string;
   protected processing = false;
-  protected elapsedTime$: Observable<string>;
-  protected selected: Method;
+  protected elapsedTime$: Observable<string> = interval(213, animationFrameScheduler).pipe(
+    map(() => this.formatTime(performance.now() - this.startTime)),
+    takeWhile(() => this.processing),
+  );
 
-  private worker: Worker;
+  protected selected: Method = this.methods[0];
+
+  private worker: Worker = new Worker(new URL('./tsp.worker.ts', import.meta.url));
   private startTime = 0;
 
-  constructor(private readonly changeDetectorRef: ChangeDetectorRef) {
-    this.selected = this.methods[0];
-    this.worker = new Worker(new URL('./tsp.worker.ts', import.meta.url));
+  constructor(
+    private readonly changeDetectorRef: ChangeDetectorRef,
+  ) { }
 
+  public ngOnInit(): void {
     this.worker.onmessage = ({ data }) => {
       this.processing = false;
       this.solution = data.solution;
       this.executionTime = this.formatTime(data.timeElapsed);
-      this.changeDetectorRef.detectChanges();
+      this.changeDetectorRef.markForCheck();
     };
-
-    this.elapsedTime$ = interval(100).pipe(
-      map(() => this.formatTime(performance.now() - this.startTime)),
-      takeWhile(() => this.processing),
-    );
   }
 
   public ngOnDestroy(): void {
