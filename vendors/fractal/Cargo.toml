@@ -1,5 +1,5 @@
 [package]
-name = "graph"
+name = "fractal"
 version = "0.1.0"
 authors = ["Xel4ek <l-baal@yandex.ru>"]
 edition = "2018"

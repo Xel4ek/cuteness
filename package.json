@@ -22,7 +22,7 @@
     "@angular/service-worker": "19.0.3",
     "@nx/angular": "20.2.1",
     "echarts": "^5.4.2",
-    "graph-drawer": "file:vendors/graph/pkg",
+    "fractal": "file:vendors/fractal/pkg",
     "grapth-alorithms": "file:vendors/graph-algorithms/pkg",
     "ngx-echarts": "^16.0.0",
     "rxjs": "~7.8.0",
