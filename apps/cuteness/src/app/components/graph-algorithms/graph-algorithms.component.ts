@@ -20,23 +20,22 @@ interface Method {
 }
 
 @Component({
-  selector: 'cuteness-graph-algorithms',
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatButtonModule,
-    MatTableModule,
-    MatSliderModule,
-    FormsModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    MatProgressSpinnerModule,
-    GraphComponent,
-    MatrixComponent,
-  ],
-  templateUrl: './graph-algorithms.component.html',
-  styleUrls: ['./graph-algorithms.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'cuteness-graph-algorithms',
+    imports: [
+        CommonModule,
+        MatButtonModule,
+        MatTableModule,
+        MatSliderModule,
+        FormsModule,
+        MatFormFieldModule,
+        MatSelectModule,
+        MatProgressSpinnerModule,
+        GraphComponent,
+        MatrixComponent,
+    ],
+    templateUrl: './graph-algorithms.component.html',
+    styleUrls: ['./graph-algorithms.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GraphAlgorithmsComponent implements OnDestroy {
   protected adjacencyMatrix: number[][] = [];

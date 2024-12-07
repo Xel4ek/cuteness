@@ -12,12 +12,11 @@ import { MatButtonModule } from '@angular/material/button';
 
 
 @Component({
-  selector: 'cuteness-fractal',
-  standalone: true,
-  imports: [CommonModule, FullScreenDirective, MatButtonModule],
-  templateUrl: './fractal.component.html',
-  styleUrls: ['./fractal.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'cuteness-fractal',
+    imports: [CommonModule, FullScreenDirective, MatButtonModule],
+    templateUrl: './fractal.component.html',
+    styleUrls: ['./fractal.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class FractalComponent implements AfterViewInit {
   private readonly worker: Worker;
@@ -81,10 +80,6 @@ export class FractalComponent implements AfterViewInit {
       ctx.fill();
       this.draw({ clientY: 0, clientX: 0 } as any);
     }, 1000)
-  }
-
-  public sendData(): void {
-    this.worker.postMessage('uuuuu');
   }
 }
 

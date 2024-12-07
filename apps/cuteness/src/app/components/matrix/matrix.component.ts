@@ -6,11 +6,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { ReplaceZeroWithInfinityPipe } from '../pipe/replace-zero-with-infinity.pipe';
 
 @Component({
-  selector: 'cuteness-matrix[adjacencyMatrix]',
-  templateUrl: './matrix.component.html',
-  styleUrls: ['./matrix.component.scss'],
-  standalone: true,
-  imports: [MatTooltipModule, NgForOf, DecimalPipe, MatButtonModule, MatIconModule, ReplaceZeroWithInfinityPipe],
+    selector: 'cuteness-matrix[adjacencyMatrix]',
+    templateUrl: './matrix.component.html',
+    styleUrls: ['./matrix.component.scss'],
+    imports: [MatTooltipModule, NgForOf, DecimalPipe, MatButtonModule, MatIconModule, ReplaceZeroWithInfinityPipe]
 })
 export class MatrixComponent {
   @Input()

@@ -2,20 +2,18 @@ import { Component, Input } from '@angular/core';
 import { EChartsOption } from 'echarts';
 import { NGX_ECHARTS_CONFIG, NgxEchartsModule } from 'ngx-echarts';
 import { GraphEdgeItemOption, GraphNodeItemOption } from 'echarts/types/src/chart/graph/GraphSeries';
-import { NgIf } from '@angular/common';
 
 @Component({
-  selector: 'cuteness-graph[adjacencyMatrix]',
-  templateUrl: './graph.component.html',
-  styleUrls: ['./graph.component.scss'],
-  standalone: true,
-  imports: [NgxEchartsModule, NgIf],
-  providers: [
-    {
-      provide: NGX_ECHARTS_CONFIG,
-      useFactory: () => ({ echarts: () => import('echarts') }),
-    },
-  ],
+    selector: 'cuteness-graph[adjacencyMatrix]',
+    templateUrl: './graph.component.html',
+    styleUrls: ['./graph.component.scss'],
+    imports: [NgxEchartsModule],
+    providers: [
+        {
+            provide: NGX_ECHARTS_CONFIG,
+            useFactory: () => ({ echarts: () => import('echarts') }),
+        },
+    ]
 })
 export class GraphComponent {
   protected links: GraphEdgeItemOption[] = [];
