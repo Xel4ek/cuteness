@@ -102,7 +102,7 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
       const { offsetX, offsetY } = this.startEvent;
 
       const width = event.offsetX - offsetX;
-      const height = Math.sign(width* (event.offsetY - offsetY)) * width / this.canvasElement.nativeElement.width * this.canvasElement.nativeElement.height;
+      const height = Math.sign(width * (event.offsetY - offsetY)) * width / this.canvasElement.nativeElement.width * this.canvasElement.nativeElement.height;
       this.controlContext?.strokeRect(
         offsetX,
         offsetY,
@@ -118,6 +118,7 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
     if (this.startEvent) {
       const { offsetX, offsetY } = this.startEvent;
       const perPixel = (this.rightBound - this.leftBound) / this.canvasElement.nativeElement.offsetWidth;
+
       let rightBound = Math.max(offsetX, event.offsetX);
       const leftBound = Math.min(offsetX, event.offsetX);
 
@@ -125,9 +126,12 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
         rightBound += 1;
       }
 
+      const width = event.offsetX - offsetX;
+      const height = Math.sign(width * (event.offsetY - offsetY)) * width / this.canvasElement.nativeElement.width * this.canvasElement.nativeElement.height;
+
       this.leftBound += leftBound * perPixel;
       this.rightBound += (rightBound - this.canvasElement.nativeElement.offsetWidth) * perPixel;
-      this.topBound += Math.min(offsetY, event.offsetY) * perPixel;
+      this.topBound += Math.min(offsetY, offsetY + height) * perPixel;
       this.render();
     }
 

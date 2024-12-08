@@ -17,10 +17,15 @@
   }
 }
 
+.info-block {
+  display: flex;
+  flex-direction: column;
+  line-height: 1rem;
+}
+
 .info {
   padding-right: 1rem;
   font-size: 14px;
-  line-height: 1rem;
 }
 
 .mat-sidenav-content {

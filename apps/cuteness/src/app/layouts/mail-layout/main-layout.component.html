@@ -4,9 +4,11 @@
       <button mat-icon-button (click)="nav.toggle()"><mat-icon>menu</mat-icon></button>
       <a mat-button class="mat-headline-5" [style.margin.px]="0" routerLink="/">Cuteness</a>
       <span class="filler"></span>
-      @for (item of info$ | async | keyvalue; track $index) {
-        <span class="info">{{ item.key | titlecase }}: {{ item.value }}</span>
-      }
+      <span class="info-block">
+        @for (item of info$ | async | keyvalue: null; track $index) {
+          <span class="info">{{ item.key | titlecase }}: {{ item.value }}</span>
+        }
+        </span>
     </mat-toolbar>
 
     <mat-sidenav-container class="full-screen">
