@@ -8,7 +8,6 @@ import {
   ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Route } from '@angular/router';
 import { FullScreenDirective } from './directives/full-screen/full-screen.directive';
 import { MatButtonModule } from '@angular/material/button';
 import { MainLayoutHeaderService } from '../../layouts/mail-layout/main-layout-header.service';
@@ -128,7 +127,7 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
 
       this.leftBound += leftBound * perPixel;
       this.rightBound += (rightBound - this.canvasElement.nativeElement.offsetWidth) * perPixel;
-      this.topBound += offsetY * perPixel;
+      this.topBound += Math.min(offsetY, event.offsetY) * perPixel;
       this.render();
     }
 
