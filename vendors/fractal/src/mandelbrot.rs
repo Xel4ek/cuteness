@@ -26,8 +26,8 @@ pub fn render_mandelbrot(
   let mut cy = start_y;
   let delta = (finish_x - start_x) / width as f64;
 
-  for x in 0..width {
-    for y in 0..height {
+  for y in 0..height {
+    for x in 0..width {
       let color_value = mandelbrot_pixel(Complex { re: cx, im: cy }, max_iter);
 
       let color = if color_value == max_iter {
@@ -41,13 +41,12 @@ pub fn render_mandelbrot(
       img_buffer[color_index + 2] = color[2];
       img_buffer[color_index + 3] = color[3];
 
-      color_index += width as usize * 4;
-      cy += delta;
+      cx += delta;
+      color_index += 4;
     }
 
-    cx += delta;
-    cy = start_y;
-    color_index = x as usize * 4;
+    cx = start_x;
+    cy += delta;
   }
 
   img_buffer
