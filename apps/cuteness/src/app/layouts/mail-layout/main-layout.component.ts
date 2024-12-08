@@ -27,4 +27,8 @@ export class MainLayoutComponent implements OnInit {
       this.sideNav?.close();
     });
   }
+
+  protected getRoute(name: string): string {
+    return name.toLowerCase().replace(' ', '-');
+  }
 }

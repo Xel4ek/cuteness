@@ -16,6 +16,10 @@ const routes: Route[] = [
     path: 'tsp',
     loadChildren: () => import('./components/graph-algorithms/graph-algorithms.component'),
   },
+  {
+    path: 'solar-system',
+    loadComponent: () => import('./components/solar-system/solar-system.component'),
+  },
   { path: '**', redirectTo: '' },
 ];
 

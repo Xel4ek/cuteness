@@ -8,7 +8,9 @@
     <mat-sidenav-container class="full-screen">
       <mat-sidenav #nav mode='over' class="sidenav">
         <mat-nav-list>
-          <a mat-list-item [routerLink]="['/', nav.toLowerCase()]" *ngFor="let nav of modules">{{nav}}</a>
+          @for (nav of modules; track nav) {
+            <a mat-list-item [routerLink]="['/', getRoute(nav)]">{{nav}}</a>
+          }
         </mat-nav-list>
       </mat-sidenav>
 

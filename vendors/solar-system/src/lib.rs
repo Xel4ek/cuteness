@@ -1,4 +1,7 @@
 mod utils;
+mod canvas;
+mod shaders;
+mod triangle;
 
 use wasm_bindgen::prelude::*;
 
@@ -6,8 +9,8 @@ use wasm_bindgen::prelude::*;
 extern "C" {
     fn alert(s: &str);
 }
+#[cfg(target_arch = "wasm32")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[wasm_bindgen]
-pub fn greet() {
-    alert("Hello, solar-system!");
-}
+pub use triangle::draw_triangle;

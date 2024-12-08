@@ -26,6 +26,7 @@
     "grapth-alorithms": "file:vendors/graph-algorithms/pkg",
     "ngx-echarts": "^16.0.0",
     "rxjs": "~7.8.0",
+    "solar-system": "file:vendors/solar-system/pkg",
     "tslib": "^2.3.0",
     "zone.js": "0.15.0"
   },
