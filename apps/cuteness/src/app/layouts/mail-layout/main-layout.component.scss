@@ -4,9 +4,25 @@
   flex-direction: column;
   align-items: stretch;
 }
+
 .sidenav {
   width: 180px;
 }
+
+.toolbar {
+  display: flex;
+
+  .filler {
+    flex: 1 1 auto;
+  }
+}
+
+.info {
+  padding-right: 1rem;
+  font-size: 14px;
+  line-height: 1rem;
+}
+
 .mat-sidenav-content {
   display: flex;
 }

@@ -1,15 +1,19 @@
 <mat-drawer-container class="full-screen" autosize="true">
   <mat-drawer-content class="full-screen">
-    <mat-toolbar color="primary" class="example-toolbar">
+    <mat-toolbar color="primary" class="toolbar">
       <button mat-icon-button (click)="nav.toggle()"><mat-icon>menu</mat-icon></button>
       <a mat-button class="mat-headline-5" [style.margin.px]="0" routerLink="/">Cuteness</a>
+      <span class="filler"></span>
+      @for (item of info$ | async | keyvalue; track $index) {
+        <span class="info">{{ item.key | titlecase }}: {{ item.value }}</span>
+      }
     </mat-toolbar>
 
     <mat-sidenav-container class="full-screen">
       <mat-sidenav #nav mode='over' class="sidenav">
         <mat-nav-list>
           @for (nav of modules; track nav) {
-            <a mat-list-item [routerLink]="['/', getRoute(nav)]">{{nav}}</a>
+            <a mat-list-item [routerLink]="['/', getRoute(nav)]">{{ nav }}</a>
           }
         </mat-nav-list>
       </mat-sidenav>

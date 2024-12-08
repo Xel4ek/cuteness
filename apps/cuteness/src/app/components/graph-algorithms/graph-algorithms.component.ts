@@ -41,7 +41,7 @@ export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
   protected adjacencyMatrix: number[][] = [];
   protected displayedColumns: string[] = [];
   protected solution?: TsmResult | null;
-  protected size = 5;
+  protected size = 12;
   protected lastSize = 0;
   protected chance = 0.5;
   protected methods: Method[] = [

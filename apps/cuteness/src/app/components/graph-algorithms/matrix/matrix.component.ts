@@ -3,7 +3,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { DecimalPipe, NgForOf } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { ReplaceZeroWithInfinityPipe } from '../../../pipe/replace-zero-with-infinity.pipe';
+import { ReplaceZeroWithInfinityPipe } from '../../../pipes/replace-zero-with-infinity.pipe';
 
 @Component({
     selector: 'cuteness-matrix[adjacencyMatrix]',

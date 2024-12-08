@@ -12,15 +12,13 @@ import('fractal').then(({ renderMandelbrot }) => {
   postMessage({ type: 'READY'});
 
   self.onmessage = ({ data }: { data: WorkerData }) => {
-    console.warn('start', data, data.rightBound - data.leftBound);
     const start = performance.now();
 
     postMessage({
       type: 'IMG',
       data: renderMandelbrot(data.canvasWidth, data.canvasHeight, 256, data.leftBound, data.rightBound, data.topBound),
+      time: `${ ((performance.now() - start) / 1000).toFixed(2) }s`,
     });
-
-    console.warn('done ', (performance.now() - start).toFixed(2));
   }
 })
 

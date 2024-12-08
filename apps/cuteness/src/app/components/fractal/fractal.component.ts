@@ -11,12 +11,15 @@ import { CommonModule } from '@angular/common';
 import { Route } from '@angular/router';
 import { FullScreenDirective } from './directives/full-screen/full-screen.directive';
 import { MatButtonModule } from '@angular/material/button';
+import { MainLayoutHeaderService } from '../../layouts/mail-layout/main-layout-header.service';
+import { ShortNumberPipe } from '../../pipes/short-number.pipe';
 
 @Component({
   selector: 'cuteness-fractal',
   imports: [CommonModule, FullScreenDirective, MatButtonModule],
   templateUrl: './fractal.component.html',
   styleUrls: ['./fractal.component.scss'],
+  providers: [ShortNumberPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FractalComponent implements AfterViewInit, OnDestroy {
@@ -37,6 +40,12 @@ export class FractalComponent implements AfterViewInit, OnDestroy {
 
   private lock = true;
 
+  constructor(
+    private readonly mainLayoutHeaderService: MainLayoutHeaderService,
+    private readonly shortNumberPipe: ShortNumberPipe,
+  ) { }
+
+
   public ngOnDestroy(): void {
     this.worker.terminate();
   }
@@ -44,25 +53,30 @@ export class FractalComponent implements AfterViewInit, OnDestroy {
   public ngAfterViewInit(): void {
     this.controlContext = this.controlCanvasElement.nativeElement.getContext('2d');
     if (this.controlContext) {
+      this.controlContext.lineWidth = 2;
       this.controlContext.strokeStyle = 'orange';
     }
 
-    console.warn('component ngAfterViewInit', this.canvasElement.nativeElement.width);
     const ctx = this.canvasElement.nativeElement.getContext('2d');
     if (!ctx) {
       throw new Error('Oops');
     }
 
+    ctx.font = "400 14px / 20px Roboto, sans-serif";
+    ctx.fillStyle = 'silver';
     this.setBound();
     const iData = ctx.createImageData(this.canvasElement.nativeElement.width, this.canvasElement.nativeElement.height);
 
-    this.worker.onmessage = ({ data: { data, type } }) => {
-      console.warn('get data', type);
+    this.worker.onmessage = ({ data: { data, type, time } }) => {
 
       switch (type) {
         case 'IMG':
           iData.data.set(data);
           ctx.putImageData(iData, 0, 0);
+          this.mainLayoutHeaderService.setHeaderInfo({
+            zoom: this.shortNumberPipe.transform(3 / (this.rightBound - this.leftBound), 2),
+            render: time,
+          })
           this.lock = false;
           break;
         case 'READY':
@@ -71,41 +85,6 @@ export class FractalComponent implements AfterViewInit, OnDestroy {
       }
     };
   }
-
-  // @HostListener('touchmove', ['$event'])
-  // @HostListener('mousemove', ['$event'])
-  // public draw(event: TouchEvent | MouseEvent): void {
-  //   if (this.lock) {
-  //     return;
-  //   }
-  //
-  //   this.lock = true;
-  //
-  //   let clientX: number;
-  //   let clientY: number;
-  //
-  //   if ('clientX' in event) {
-  //     clientX = event.clientX;
-  //     clientY = event.clientY;
-  //   } else {
-  //     clientX = event.touches[0].clientX;
-  //     clientY = event.touches[0].clientY;
-  //   }
-  //
-  //   const x = clientX - this.canvasElement.nativeElement.getBoundingClientRect().left;
-  //   const y = clientY - this.canvasElement.nativeElement.getBoundingClientRect().top;
-  //
-  //   // Преобразуй координаты мыши в координаты фрактала
-  //   const fractalX = (x / this.canvasElement.nativeElement.width) * 3.5 - 2;
-  //   const fractalY = (y / this.canvasElement.nativeElement.height) * 3 - 1.5;
-  //
-  //   this.worker.postMessage({
-  //     canvasWidth: this.canvasElement.nativeElement.width,
-  //     canvasHeight: this.canvasElement.nativeElement.height,
-  //     fractalX,
-  //     fractalY,
-  //   });
-  // }
 
   @HostListener('touchstart', ['$event'])
   @HostListener('mousedown', ['$event'])
@@ -140,8 +119,12 @@ export class FractalComponent implements AfterViewInit, OnDestroy {
     if (this.startEvent) {
       const { offsetX, offsetY } = this.startEvent;
       const perPixel = (this.rightBound - this.leftBound) / this.canvasElement.nativeElement.offsetWidth;
-      const rightBound = Math.max(offsetX, event.offsetX);
+      let rightBound = Math.max(offsetX, event.offsetX);
       const leftBound = Math.min(offsetX, event.offsetX);
+
+      if (rightBound == leftBound) {
+        rightBound += 1;
+      }
 
       this.leftBound += leftBound * perPixel;
       this.rightBound += (rightBound - this.canvasElement.nativeElement.offsetWidth) * perPixel;
@@ -157,14 +140,15 @@ export class FractalComponent implements AfterViewInit, OnDestroy {
   protected reset(event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
-    this.setBound();
 
-    this.render();
+    if (!this.lock) {
+      this.setBound();
+      this.render();
+    }
   }
 
   private render() {
     this.lock = true;
-    console.warn(this.leftBound, this.rightBound, this.topBound);
     this.worker.postMessage({
       canvasWidth: this.canvasElement.nativeElement.width,
       canvasHeight: this.canvasElement.nativeElement.height,

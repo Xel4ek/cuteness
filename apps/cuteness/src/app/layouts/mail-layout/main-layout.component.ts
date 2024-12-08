@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, ViewChild } from '@angular/
 import { NavigationEnd, Router } from '@angular/router';
 import { MatSidenav } from '@angular/material/sidenav';
 import { filter } from 'rxjs';
+import { MainLayoutHeaderService } from './main-layout-header.service';
 
 @Component({
     selector: 'cuteness-main-layout',
@@ -16,8 +17,11 @@ export class MainLayoutComponent implements OnInit {
   @ViewChild('nav')
   private sideNav?: MatSidenav;
 
+  protected info$ = this.mainLayoutHeaderService.getHeaderInfo();
+
   constructor(
     private readonly router: Router,
+    private readonly mainLayoutHeaderService: MainLayoutHeaderService,
   ) {}
 
   public ngOnInit(): void {
@@ -25,6 +29,7 @@ export class MainLayoutComponent implements OnInit {
       filter((event) => event instanceof NavigationEnd)
     ).subscribe(() => {
       this.sideNav?.close();
+      this.mainLayoutHeaderService.setHeaderInfo({});
     });
   }
 
