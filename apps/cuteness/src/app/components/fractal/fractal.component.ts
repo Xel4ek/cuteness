@@ -22,7 +22,7 @@ import { ShortNumberPipe } from '../../pipes/short-number.pipe';
   providers: [ShortNumberPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FractalComponent implements AfterViewInit, OnDestroy {
+export default class FractalComponent implements AfterViewInit, OnDestroy {
   private readonly worker: Worker = new Worker(new URL('./fractal.worker.ts', import.meta.url));
   private startEvent: MouseEvent | null = null;
 
@@ -164,5 +164,3 @@ export class FractalComponent implements AfterViewInit, OnDestroy {
     this.topBound = (this.leftBound - this.rightBound) * this.canvasElement.nativeElement.height / this.canvasElement.nativeElement.width / 2;
   }
 }
-
-export default [{ path: '', component: FractalComponent }] as Route[];

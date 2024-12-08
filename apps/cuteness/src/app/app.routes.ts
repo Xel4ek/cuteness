@@ -10,7 +10,7 @@ const routes: Route[] = [
   },
   {
     path: 'fractal',
-    loadChildren: () => import('./components/fractal/fractal.component'),
+    loadComponent: () => import('./components/fractal/fractal.component'),
   },
   {
     path: 'tsp',
