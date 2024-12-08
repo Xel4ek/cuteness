@@ -4,7 +4,7 @@ use num_complex::Complex;
 fn mandelbrot_pixel(c: Complex<f64>, max_iter: u32) -> u32 {
   let mut z = Complex { re: 0.0, im: 0.0 };
   for i in 0..max_iter {
-    if z.norm() > 1.5 {
+    if z.re * z.re + z.im * z.im > 4.0 {
       return i;
     }
 
@@ -21,27 +21,33 @@ pub fn render_mandelbrot(
 ) -> Vec<u8> {
   let mut img_buffer = vec![0; (width * height * 4) as usize];
 
-  let delta =  (finish_x - start_x) / width as f64;
+  let mut color_index = 0;
+  let mut cx = start_x;
+  let mut cy = start_y;
+  let delta = (finish_x - start_x) / width as f64;
 
   for x in 0..width {
     for y in 0..height {
-      let cx = x as f64 * delta + start_x;
-      let cy = y as f64 * delta + start_y;
-      let color_index = (y * width + x) as usize * 4;
       let color_value = mandelbrot_pixel(Complex { re: cx, im: cy }, max_iter);
 
       let color = if color_value == max_iter {
         [0, 0, 0, 255]
       } else {
-        // 49,50,48,1
-        [color_value as u8 * 10, 255 - color_value as u8 * 10, color_value as u8 * 5, color_value as u8]
+        [color_value as u8 * 7, color_value as u8 * 3, color_value as u8 * 5, 255]
       };
 
       img_buffer[color_index] = color[0];
       img_buffer[color_index + 1] = color[1];
       img_buffer[color_index + 2] = color[2];
       img_buffer[color_index + 3] = color[3];
+
+      color_index += width as usize * 4;
+      cy += delta;
     }
+
+    cx += delta;
+    cy = start_y;
+    color_index = x as usize * 4;
   }
 
   img_buffer

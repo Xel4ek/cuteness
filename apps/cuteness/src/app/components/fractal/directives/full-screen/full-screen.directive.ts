@@ -14,7 +14,8 @@ export class FullScreenDirective implements AfterViewInit {
   ) { }
 
   public ngAfterViewInit(): void {
+    const height = this.document.body.clientHeight;
     this.elementRef.nativeElement.width = this.document.body.clientWidth;
-    this.elementRef.nativeElement.height = this.document.body.clientHeight - 64;
+    this.elementRef.nativeElement.height = height - (height % 2 + 1) - 64;
   }
 }

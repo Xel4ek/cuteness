@@ -12,7 +12,7 @@ import('fractal').then(({ renderMandelbrot }) => {
   postMessage({ type: 'READY'});
 
   self.onmessage = ({ data }: { data: WorkerData }) => {
-    console.warn('start', data);
+    console.warn('start', data, data.rightBound - data.leftBound);
     const start = performance.now();
 
     postMessage({

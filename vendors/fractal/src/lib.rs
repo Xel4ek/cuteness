@@ -1,6 +1,7 @@
 mod utils;
 mod mandelbrot;
 
+
 use wasm_bindgen::prelude::*;
 
 #[cfg(feature = "wee_alloc")]
