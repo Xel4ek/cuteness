@@ -8,15 +8,16 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
-    "target": "es2020",
+    "target": "es2023",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": ["es2023", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
       "@cuteness/rsa": ["libs/rsa/src/index.ts"],
-      "@cuteness/travelling-salesman-problem": ["libs/travelling-salesman-problem/src/index.ts"]
+      "@cuteness/travelling-salesman-problem": ["libs/travelling-salesman-problem/src/index.ts"],
+      "opfs": ["libs/opfs/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

@@ -12,7 +12,7 @@ import { MainLayoutHeaderService } from './main-layout-header.service';
     standalone: false
 })
 export class MainLayoutComponent implements OnInit {
-  public modules = ['Fractal', 'TSP'];
+  public modules = ['Fractal', 'TSP', 'Solar System'];
 
   @ViewChild('nav')
   private sideNav?: MatSidenav;

@@ -20,6 +20,10 @@ const routes: Route[] = [
     path: 'solar-system',
     loadComponent: () => import('./components/solar-system/solar-system.component'),
   },
+  {
+    path: 'opfs',
+    loadComponent: () => import('./components/opfs/opfs.component'),
+  },
   { path: '**', redirectTo: '' },
 ];
 

@@ -1,0 +1,24 @@
+@for (action of actionList; track $index) {
+  <mat-label>{{ action.title }}</mat-label>
+  @if (!action.values) {
+    <mat-slider
+      class="example-margin"
+      [max]="action.max"
+      [min]="action.min"
+      [showTickMarks]="true">
+      <input matSliderThumb [ngModel]="action.value" (ngModelChange)="action.action($event)">
+    </mat-slider>
+  }
+
+  @if (action.values) {
+    <mat-select [ngModel]="action.value" (ngModelChange)="action.action($event)">
+      @for(option of action.values; track option) {
+        <mat-option [value]="option">{{option}}</mat-option>
+      }
+    </mat-select>
+  }
+<!--  <mat-form-field>-->
+<!--    <mat-label>{{ action.title }}</mat-label>-->
+<!--    <input matInput type="number" [ngModel]="action.value" (ngModelChange)="action.action($event)">-->
+<!--  </mat-form-field>-->
+}

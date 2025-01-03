@@ -1,9 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "../../out-tsc/worker",
-    "lib": ["es2018", "webworker"],
-    "types": []
+    "outDir": "../..//out-tsc/worker",
+    "lib": ["es2023", "webworker"],
+    "types": ["@webgpu/types"]
   },
   "include": ["src/**/*.worker.ts"]
 }
