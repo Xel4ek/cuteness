@@ -16,8 +16,7 @@
     "baseUrl": ".",
     "paths": {
       "@cuteness/rsa": ["libs/rsa/src/index.ts"],
-      "@cuteness/travelling-salesman-problem": ["libs/travelling-salesman-problem/src/index.ts"],
-      "opfs": ["libs/opfs/src/index.ts"]
+      "@cuteness/travelling-salesman-problem": ["libs/travelling-salesman-problem/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

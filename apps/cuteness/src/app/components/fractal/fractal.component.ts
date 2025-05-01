@@ -108,7 +108,6 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
   }
 
   private render() {
-    console.warn(this.rightBound, this.leftBound, this.topBound);
     this.postMessage({
       type: WorkerEvent.coordinates,
       coordinates: {

@@ -1,6 +1,3 @@
-import { WorkerEvent } from './worker-event';
-import { MandelbrotWorkerCommand } from './mandelbrot-worker-command';
-
 const code = `
 struct MandelbrotBound {
   canvasSize: vec2f,
@@ -11,8 +8,6 @@ struct MandelbrotSettings {
   maxIteration: u32,
 }
 
-@group(0) @binding(0) var<uniform> mandelbrotBound: MandelbrotBound;
-@group(0) @binding(1) var<uniform> mandelbrotSettings: MandelbrotSettings;
 
 @vertex
 fn vs(
@@ -29,24 +24,7 @@ fn vs(
 }
 
 fn mandelbrot(position: vec4f) -> vec4f {
-  let cRe = position.x * mandelbrotBound.canvasSize.x + mandelbrotBound.bound.x ;
-  let cIm = position.y * mandelbrotBound.canvasSize.y + mandelbrotBound.bound.y ;
-  var zRe = 0.0;
-  var zIm = 0.0;
-
-  for (var i: u32 = 0; i < mandelbrotSettings.maxIteration; i++) {
-    let zRe2 = zRe * zRe;
-    let zIm2 = zIm * zIm;
-
-    if (zRe2 + zIm2 > 4.0) {
-      return unpack4x8unorm((0xff & (i * 7)) | ((0xff & (i * 3) ) << 8) | ((0xff & (i * 5)) << 16));
-    }
-
-    zIm = 2.0 * zRe * zIm + cIm;
-    zRe = zRe2 - zIm2 + cRe;
-  }
-
-  return vec4f(0.0, 0.0, 0.0, 1.0);
+  return vec4f(0.0, 1.0, 0.0, 1.0);
 }
 
 @fragment
@@ -82,7 +60,7 @@ abstract class BaseWebGPU {
   }
 }
 
-class Mandelbrot extends BaseWebGPU {
+class SolarSystem extends BaseWebGPU {
   protected module: GPUShaderModule;
   protected pipeline: GPURenderPipeline;
   protected renderPassDescriptor: GPURenderPassDescriptor;
@@ -103,6 +81,7 @@ class Mandelbrot extends BaseWebGPU {
     this.pipeline = this.device.createRenderPipeline({
       label: 'our hardcoded red triangle pipeline',
       layout: 'auto',
+      primitive: { topology: `triangle-strip` },
       vertex: {
         module: this.module,
       },
@@ -122,53 +101,48 @@ class Mandelbrot extends BaseWebGPU {
           storeOp: 'store',
         },
       ],
-      // timestampWrites: {
-      //   querySet,
-      //   beginningOfPassWriteIndex: 0,
-      //   endOfPassWriteIndex: 1,
-      // },
     };
 
     this.createUniforms();
   }
 
   private createUniforms() {
-    const staticUniformBufferSize = 16;
-
-    this.staticUniformBuffer = this.device.createBuffer({
-      label: `static uniforms for obj`,
-      size: staticUniformBufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    this.uniformValues = new Float32Array(staticUniformBufferSize / 4);
-
-    const settingsUniformBufferSize = 4;
-    this.settingsUniformBuffer = this.device.createBuffer({
-      label: `calc settings`,
-      size: settingsUniformBufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    this.settingsUniformValues = new ArrayBuffer(settingsUniformBufferSize)
-    this.updateSettings(500);
-
-    this.bindGroup = this.device.createBindGroup({
-      label: `bind group for obj`,
-      layout: this.pipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: { buffer: this.staticUniformBuffer } },
-        { binding: 1, resource: { buffer: this.settingsUniformBuffer } },
-      ],
-    });
+    // const staticUniformBufferSize = 16;
+    //
+    // this.staticUniformBuffer = this.device.createBuffer({
+    //   label: `static uniforms for obj`,
+    //   size: staticUniformBufferSize,
+    //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    // });
+    //
+    // this.uniformValues = new Float32Array(staticUniformBufferSize / 4);
+    //
+    // const settingsUniformBufferSize = 4;
+    // this.settingsUniformBuffer = this.device.createBuffer({
+    //   label: `calc settings`,
+    //   size: settingsUniformBufferSize,
+    //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    // });
+    //
+    // this.settingsUniformValues = new ArrayBuffer(settingsUniformBufferSize)
+    // this.updateSettings(500);
+    //
+    // this.bindGroup = this.device.createBindGroup({
+    //   label: `bind group for obj`,
+    //   layout: this.pipeline.getBindGroupLayout(0),
+    //   entries: [
+    //     { binding: 0, resource: { buffer: this.staticUniformBuffer } },
+    //     { binding: 1, resource: { buffer: this.settingsUniformBuffer } },
+    //   ],
+    // });
   }
 
   public updateUniforms(leftBound: number, rightBound: number, topBound?: number) {
-    const pixPerDin = (rightBound - leftBound)/this.offscreenCanvas.width;
-    const hPix = -this.offscreenCanvas.height * pixPerDin / 2;
-
-    this.uniformValues.set([pixPerDin, pixPerDin, leftBound, topBound ?? hPix]);
-    this.device.queue.writeBuffer(this.staticUniformBuffer, 0, this.uniformValues);
+    // const pixPerDin = (rightBound - leftBound)/this.offscreenCanvas.width;
+    // const hPix = -this.offscreenCanvas.height * pixPerDin / 2;
+    //
+    // this.uniformValues.set([pixPerDin, pixPerDin, leftBound, topBound ?? hPix]);
+    // this.device.queue.writeBuffer(this.staticUniformBuffer, 0, this.uniformValues);
   }
 
   public render() {
@@ -181,7 +155,7 @@ class Mandelbrot extends BaseWebGPU {
     // создаем render pass encoder для установке нашего шаблона
     const pass = encoder.beginRenderPass(this.renderPassDescriptor);
     pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
+    // pass.setBindGroup(0, this.bindGroup);
     pass.draw(3);
     pass.end();
     // encoder.resolveQuerySet(querySet, 0, querySet.count, resolveBuffer, 0);
@@ -201,22 +175,38 @@ class Mandelbrot extends BaseWebGPU {
   }
 }
 
-const mandelbrot = new Mandelbrot();
-const render = mandelbrot.render.bind(mandelbrot);
+const solarSystem = new SolarSystem();
+const render = solarSystem.render.bind(solarSystem);
 
-self.onmessage = async ({ data }: MessageEvent<MandelbrotWorkerCommand>) => {
+export enum WorkerEvent {
+  init = 'init',
+  render = 'render',
+  coordinates = 'coordinates',
+  settings = 'settings',
+}
+
+
+export type SolarSystemWorkerCommand =
+  | {
+  type: WorkerEvent.init;
+  offscreenCanvas: OffscreenCanvas;
+}
+  | {
+  type: WorkerEvent.settings;
+  maxIteration: number;
+};
+
+
+self.onmessage = async ({ data }: MessageEvent<SolarSystemWorkerCommand>) => {
   switch (data.type) {
     case WorkerEvent.init:
-      await mandelbrot.init(data.offscreenCanvas);
-      mandelbrot.updateUniforms(-2, 1);
-      break;
-    case WorkerEvent.coordinates:
-      mandelbrot.updateUniforms(data.coordinates.leftBound, data.coordinates.rightBound, data.coordinates.topBound);
+      await solarSystem.init(data.offscreenCanvas);
+      // mandelbrot.updateUniforms(-2, 1);
       break;
     case WorkerEvent.settings:
-      mandelbrot.updateSettings(data.maxIteration);
+      // solarSystem.updateSettings(data.maxIteration);
       break;
   }
 
   requestAnimationFrame(render);
-}
+};

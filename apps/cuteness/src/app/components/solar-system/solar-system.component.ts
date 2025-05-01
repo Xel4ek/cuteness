@@ -12,7 +12,7 @@ import { FullScreenDirective } from '../fractal/directives/full-screen/full-scre
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class SolarSystemComponent implements AfterViewInit {
-  // private readonly worker = new Worker(new URL('./solar-system.worker.ts', import.meta.url), { type: 'module' });
+  private readonly worker = new Worker(new URL('./worker/solar-system.worker.ts', import.meta.url), { type: 'module' });
   @ViewChild('canvasElement', { static: true })
   private readonly canvasElement!: ElementRef<HTMLCanvasElement>;
   protected render() {}
@@ -20,7 +20,7 @@ export default class SolarSystemComponent implements AfterViewInit {
   public ngAfterViewInit(): void {
     const offscreenCanvas = this.canvasElement.nativeElement.transferControlToOffscreen();
 
-    // this.worker.postMessage({ offscreenCanvas, type: 'init' }, [offscreenCanvas]);
+    this.worker.postMessage({ offscreenCanvas, type: 'init' }, [offscreenCanvas]);
   }
 }
 
