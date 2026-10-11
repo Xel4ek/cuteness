@@ -37,6 +37,8 @@ bun start
 
 Open http://localhost:4200/. The app reloads when source files change.
 
+On the fractal screen, drag a rectangle with the mouse to zoom in; right-click or double-click to reset the view. On touch screens, pinch to zoom in or out, drag with one finger to pan, and double-tap to reset. A click or single tap keeps the current zoom.
+
 ## Checks
 
 ```sh

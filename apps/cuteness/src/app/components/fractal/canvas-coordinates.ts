@@ -1,6 +1,12 @@
-interface CanvasCoordinates {
+export interface CanvasCoordinates {
   offsetX: number;
   offsetY: number;
+}
+
+export interface CanvasTransform {
+  from: CanvasCoordinates;
+  to: CanvasCoordinates;
+  scale: number;
 }
 
 type CanvasInputEvent =

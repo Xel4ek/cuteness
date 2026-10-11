@@ -18,7 +18,7 @@ import { MandelbrotWorkerCommand } from './worker/mandelbrot-worker-command';
 import { SceneControlComponent } from '../scena-control/scene-control.component';
 import { ControlAction } from '../scena-control/control-action';
 import { SelectAreaDirective } from './directives/select-area/select-area.directive';
-import { getCanvasCoordinates } from './canvas-coordinates';
+import { CanvasTransform, getCanvasCoordinates } from './canvas-coordinates';
 
 @Component({
   selector: 'cuteness-fractal',
@@ -111,6 +111,29 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
     this.leftBound += leftBound * perPixel;
     this.rightBound += (rightBound - this.offscreenCanvas.nativeElement.offsetWidth) * perPixel;
     this.topBound += Math.min(offsetY, offsetY + height) * perPixel;
+    this.render();
+  }
+
+  protected transformCoordinates({ from, to, scale }: CanvasTransform) {
+    const width = this.controlCanvasElement.nativeElement.getBoundingClientRect().width;
+    const span = this.rightBound - this.leftBound;
+    const perPixel = span / width;
+    const nextPerPixel = perPixel * scale;
+    const leftBound = this.leftBound + from.offsetX * perPixel - to.offsetX * nextPerPixel;
+    const rightBound = leftBound + span * scale;
+    const topBound = this.topBound + from.offsetY * perPixel - to.offsetY * nextPerPixel;
+    if (
+      !Number.isFinite(leftBound) ||
+      !Number.isFinite(rightBound) ||
+      !Number.isFinite(topBound) ||
+      rightBound <= leftBound
+    ) {
+      return;
+    }
+
+    this.leftBound = leftBound;
+    this.rightBound = rightBound;
+    this.topBound = topBound;
     this.render();
   }
 

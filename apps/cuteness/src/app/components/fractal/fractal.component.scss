@@ -14,5 +14,9 @@
 
   canvas {
     display: block;
+
+    &[cutenessSelectArea] {
+      touch-action: none;
+    }
   }
 }

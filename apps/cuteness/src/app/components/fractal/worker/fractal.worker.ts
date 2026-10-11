@@ -206,17 +206,21 @@ class Mandelbrot extends BaseWebGPU {
 
 const mandelbrot = new Mandelbrot();
 const render = mandelbrot.render.bind(mandelbrot);
+let initialization: Promise<void> | undefined;
 
 self.onmessage = async ({ data }: MessageEvent<MandelbrotWorkerCommand>) => {
   switch (data.type) {
     case WorkerEvent.init:
-      await mandelbrot.init(data.offscreenCanvas);
+      initialization = mandelbrot.init(data.offscreenCanvas);
+      await initialization;
       mandelbrot.updateUniforms(-2, 1);
       break;
     case WorkerEvent.coordinates:
+      await initialization;
       mandelbrot.updateUniforms(data.coordinates.leftBound, data.coordinates.rightBound, data.coordinates.topBound);
       break;
     case WorkerEvent.settings:
+      await initialization;
       mandelbrot.updateSettings(data.maxIteration);
       break;
   }
