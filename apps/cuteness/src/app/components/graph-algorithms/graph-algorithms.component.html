@@ -1,66 +1,85 @@
-<div class="slider__group">
-  <div class="slider__block">
-    Size: {{ size }}
-    <mat-slider class="example-slider" [max]="selected.limit" [min]="3" [step]="1">
-      <input matSliderThumb [(ngModel)]="size" />
+<header class="page-heading">
+  <h1>Travelling salesman</h1>
+  @if (adjacencyMatrix.length) {
+    <span>{{ lastSize }} vertices · {{ graphChance * 100 | number: '.0-0' }}% fill</span>
+  }
+</header>
+
+<section class="controls" aria-label="Graph settings">
+  <div class="slider-block">
+    <label for="graph-size"
+      >Vertices <strong>{{ size }}</strong></label
+    >
+    <mat-slider [max]="100" [min]="3" [step]="1" [disabled]="processing">
+      <input id="graph-size" matSliderThumb [(ngModel)]="size" />
     </mat-slider>
   </div>
-  <div class="slider__block">
-    <span>Fill: {{ chance * 100 | number: '.0-0' }} %</span>
-    <mat-slider class="example-slider" [max]="1" [min]="0" [step]="0.01">
-      <input matSliderThumb [(ngModel)]="chance" />
+  <div class="slider-block">
+    <label for="graph-fill"
+      >Fill <strong>{{ chance * 100 | number: '.0-0' }}%</strong></label
+    >
+    <mat-slider [max]="1" [min]="0" [step]="0.01" [disabled]="processing">
+      <input id="graph-fill" matSliderThumb [(ngModel)]="chance" />
     </mat-slider>
   </div>
-</div>
-<div class="button__block">
-  <button mat-button (click)="generateMatrix()" [disabled]="processing" class="button">Generate</button>
-  @if (adjacencyMatrix.length) {
-    <button mat-button (click)="solve()" [disabled]="processing" class="button">Calc</button>
+  <button mat-flat-button (click)="generateMatrix()" [disabled]="processing">Generate</button>
+</section>
+
+<section class="algorithms" aria-label="Compare algorithms">
+  @for (method of methods; track method.method) {
+    @let run = resultFor(method);
+    <button
+      class="algorithm-button"
+      [class.selected]="!!run && selectedRun?.id === run.id"
+      [attr.aria-pressed]="!!run && selectedRun?.id === run.id"
+      [attr.aria-label]="method.title"
+      [attr.data-run-id]="run?.id"
+      (click)="chooseMethod(method)"
+      [disabled]="processing || !adjacencyMatrix.length"
+    >
+      <span>{{ method.title }}</span>
+      @if (run) {
+        <span class="algorithm-metrics">
+          <strong>{{ run.solution ? (run.solution.distance | number: '.0-2') : 'Not found' }}</strong>
+          <span>{{ formatTime(run.timeElapsed) }}</span>
+        </span>
+      } @else {
+        <span class="algorithm-hint">Run</span>
+      }
+    </button>
   }
-  @if (adjacencyMatrix.length) {
-    <mat-form-field appearance="outline" class="button">
-      <mat-label>Choose method</mat-label>
-      <mat-select [(value)]="selected" (valueChange)="resetGraph()" [disabled]="processing">
-        @for (method of methods; track method) {
-          <mat-option [value]="method">
-            {{ method.title }}
-          </mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
+</section>
+
+<div class="status" role="status" aria-live="polite">
+  @if (processing) {
+    <mat-spinner [diameter]="18"></mat-spinner>
+    <span>Calculating · {{ elapsedTime$ | async }}</span>
+    <button mat-button (click)="stop()">Stop</button>
+  } @else {
+    @if (statusMessage) {
+      <span>{{ statusMessage }}</span>
+    } @else if (selectedRun?.solution; as result) {
+      <span>{{ result.paths | number }} {{ selectedRun?.method?.counter }}</span>
+    }
+    @if (selectedRun) {
+      <button mat-button (click)="solve(selectedRun.method)">Run again</button>
+    }
   }
 </div>
-@if (processing) {
-  <div class="info">
-    <mat-spinner class="spinner"></mat-spinner>
-    {{ elapsedTime$ | async }}
-  </div>
-}
+
 @if (solution) {
-  <div>
-    <div class="info">
-      [{{ solution.paths | number }}] ({{ executionTime }}) Distance: {{ solution.distance | number: '.0-2' }}
-    </div>
-    <div class="info">
-      {{ solution.vertices.join(' ➢ ') }}
-    </div>
-  </div>
+  <details class="route-panel">
+    <summary>Route</summary>
+    <p class="route">{{ solution.vertices.join(' ➢ ') }}</p>
+  </details>
 }
 
-@if (solution === null) {
-  <div style="color: #ff8484" class="info">Sorry but we haven't solution try other graph</div>
-}
 @if (adjacencyMatrix.length) {
-  <div style="overflow-x: auto">
-    <cuteness-graph
-      [adjacencyMatrix]="adjacencyMatrix"
-      [solution]="$safeNavigationMigration(solution?.vertices)"
-      [style.margin-bottom.rem]="1"
-    />
-    <cuteness-matrix [adjacencyMatrix]="adjacencyMatrix" [solution]="$safeNavigationMigration(solution?.vertices)" />
+  <div class="visualization">
+    <cuteness-graph [adjacencyMatrix]="adjacencyMatrix" [solution]="solution?.vertices ?? []" />
   </div>
+  <details class="matrix-panel">
+    <summary>Adjacency matrix</summary>
+    <cuteness-matrix [adjacencyMatrix]="adjacencyMatrix" [solution]="solution?.vertices ?? []" />
+  </details>
 }
-
-<ng-template #noGraph>
-  <div>You can see graph if node count less or equal 20</div>
-</ng-template>

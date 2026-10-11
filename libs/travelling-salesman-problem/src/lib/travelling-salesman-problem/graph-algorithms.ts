@@ -9,125 +9,157 @@ export interface TsmResult {
 
 export class GraphAlgorithms {
   public static solveTravelingSalesmanProblemACO(graph: number[][]): TsmResult | null {
-    const antCount = graph.length * 10;
+    const numCities = graph.length;
+    if (numCities < 2) {
+      return null;
+    }
+
     const alpha = 1;
     const beta = 1;
     const evaporation = 0.5;
     const Q = 100;
-    const maxIteration = 10000;
-    const checkFrequency = 50;
-    const graphCopy = graph.map((row) => row.map((item) => (item === 0 ? Infinity : item)));
+    const antCount = Math.min(10 * numCities, 100);
+    const maxIterations = 300;
+    const maxStagnantIterations = 30;
+    const pheromoneFloor = 1e-12;
 
-    const initialPheromone = 1 / (graph.length * graph.length);
+    interface Neighbor {
+      city: number;
+      inverseDistance: number;
+    }
 
-    const totalWeight = graph.reduce((sum, row) => sum + row.reduce((rowSum, weight) => rowSum + weight, 0), 0);
+    const neighbors = Array.from({ length: numCities }, (): Neighbor[] => []);
+    const incomingEdges = new Array<number>(numCities).fill(0);
+    const pheromone = Array.from({ length: numCities }, () => new Array<number>(numCities).fill(0));
 
-    const pheromone = graph.map((row) => row.map((weight) => (initialPheromone / totalWeight) * weight));
+    for (let from = 0; from < numCities; from++) {
+      for (let to = 0; to < numCities; to++) {
+        const weight = graph[from]?.[to];
+        if (from !== to && weight !== undefined && Number.isFinite(weight) && weight > 0) {
+          neighbors[from].push({ city: to, inverseDistance: 1 / weight });
+          incomingEdges[to]++;
+          pheromone[from][to] = 1;
+        }
+      }
+    }
 
-    const distance = (i: number, j: number): number => graphCopy[i][j];
+    if (neighbors.some((available) => available.length === 0) || incomingEdges.some((count) => count === 0)) {
+      return null;
+    }
+
     let bestDistance = Infinity;
-    let bestPath: number[] = [];
-    let prevBestPath: number[] = [];
+    let bestPath: number[] | undefined;
     let paths = 0;
+    let stagnantIterations = 0;
 
-    for (let iter = 0; iter < maxIteration; iter++) {
-      const ants = Array.from({ length: antCount }, () => ({
-        path: [0],
-        currentNode: 0,
-        cost: 0.0,
-      }));
+    for (let iteration = 0; iteration < maxIterations && stagnantIterations < maxStagnantIterations; iteration++) {
+      let improved = false;
+      const deposits = Array.from({ length: numCities }, () => new Array<number>(numCities).fill(0));
 
-      ants.forEach((ant) => {
+      for (let ant = 0; ant < antCount; ant++) {
         paths++;
-        const visitedSet = new Set(ant.path);
-        while (visitedSet.size < graph.length) {
-          const unvisited = graph[ant.currentNode]
-            .map((_, idx) => idx)
-            .filter((idx) => !visitedSet.has(idx) && distance(ant.currentNode, idx));
+        const start = ant % numCities;
+        const path = [start];
+        const visited = new Array<boolean>(numCities).fill(false);
+        visited[start] = true;
+        let current = start;
+        let cost = 0;
+        let complete = true;
 
-          const denom = unvisited.reduce(
-            (acc, dest) =>
-              acc +
-              Math.pow(pheromone[ant.currentNode][dest], alpha) * Math.pow(1 / distance(ant.currentNode, dest), beta),
-            0,
-          );
+        while (path.length < numCities) {
+          const available = neighbors[current];
+          let totalWeight = 0;
+          let fallback = -1;
 
-          const probabilities = unvisited.map((dest) => ({
-            dest,
-            prob:
-              (Math.pow(pheromone[ant.currentNode][dest], alpha) *
-                Math.pow(1 / distance(ant.currentNode, dest), beta)) /
-              denom,
-          }));
+          for (const neighbor of available) {
+            if (!visited[neighbor.city]) {
+              if (fallback === -1) {
+                fallback = neighbor.city;
+              }
 
-          probabilities.sort((a, b) => b.prob - a.prob);
-
-          // Добавляем случайный фактор
-          const randomFactor = Math.random(); // Генерируем случайное число от 0 до 1
-          let cumulativeProb = 0;
-          let nextNode = -1;
-
-          for (const probability of probabilities) {
-            cumulativeProb += probability.prob;
-            if (cumulativeProb >= randomFactor) {
-              nextNode = probability.dest;
-              break;
+              const transitionWeight =
+                Math.pow(pheromone[current][neighbor.city], alpha) * Math.pow(neighbor.inverseDistance, beta);
+              if (Number.isFinite(transitionWeight) && transitionWeight > 0) {
+                totalWeight += transitionWeight;
+              }
             }
           }
 
-          if (nextNode !== -1) {
-            ant.path.push(nextNode);
-            ant.currentNode = nextNode;
-            visitedSet.add(nextNode);
-            ant.cost += distance(ant.path[ant.path.length - 2], ant.currentNode);
-          } else {
+          if (fallback === -1) {
+            complete = false;
             break;
           }
-        }
 
-        ant.cost += distance(ant.currentNode, 0);
-        if (ant.cost < bestDistance && ant.path.length === graph.length) {
-          bestDistance = ant.cost;
-          bestPath = [...ant.path, 0];
-        }
-      });
+          let next = fallback;
+          if (Number.isFinite(totalWeight) && totalWeight > 0) {
+            const target = Math.random() * totalWeight;
+            let cumulativeWeight = 0;
 
-      if (iter % checkFrequency === 0 && prevBestPath.toString() === bestPath.toString()) {
-        if (bestDistance < Infinity) {
-          return {
-            vertices: bestPath,
-            distance: bestDistance,
-            paths,
-          };
-        }
-      }
-
-      const deltaPheromone = ants.map((ant) => {
-        const antPath = ant.path;
-        const antCost = ant.cost;
-        const antDeltaPheromone = Array.from({ length: graph.length }, () => 0);
-        for (let i = 0; i < antPath.length - 1; i++) {
-          const fromNode = antPath[i];
-          const toNode = antPath[i + 1];
-          antDeltaPheromone[fromNode] += Q / antCost;
-          antDeltaPheromone[toNode] += Q / antCost;
-        }
-
-        return antDeltaPheromone;
-      });
-
-      for (let i = 0; i < graph.length; i++) {
-        for (let j = 0; j < graph.length; j++) {
-          if (i !== j) {
-            pheromone[i][j] = evaporation * pheromone[i][j] + deltaPheromone[i][j];
+            for (const neighbor of available) {
+              if (!visited[neighbor.city]) {
+                const transitionWeight =
+                  Math.pow(pheromone[current][neighbor.city], alpha) * Math.pow(neighbor.inverseDistance, beta);
+                if (Number.isFinite(transitionWeight) && transitionWeight > 0) {
+                  cumulativeWeight += transitionWeight;
+                  if (cumulativeWeight >= target) {
+                    next = neighbor.city;
+                    break;
+                  }
+                }
+              }
+            }
           }
+
+          const edgeCost = graph[current][next];
+          path.push(next);
+          visited[next] = true;
+          current = next;
+          cost += edgeCost;
+        }
+
+        const closingCost = graph[current]?.[start];
+        if (
+          !complete ||
+          closingCost === undefined ||
+          !Number.isFinite(closingCost) ||
+          closingCost <= 0 ||
+          !Number.isFinite(cost + closingCost)
+        ) {
+          continue;
+        }
+
+        cost += closingCost;
+        if (cost < bestDistance) {
+          bestDistance = cost;
+          bestPath = [...path, start];
+          improved = true;
+        }
+
+        const deposit = Q / cost;
+        if (!Number.isFinite(deposit) || deposit <= 0) {
+          continue;
+        }
+
+        for (let index = 0; index < path.length; index++) {
+          const from = path[index];
+          const to = path[(index + 1) % path.length];
+          deposits[from][to] += deposit;
         }
       }
 
-      prevBestPath = bestPath;
+      for (let from = 0; from < numCities; from++) {
+        for (const neighbor of neighbors[from]) {
+          pheromone[from][neighbor.city] = Math.max(
+            pheromoneFloor,
+            evaporation * pheromone[from][neighbor.city] + deposits[from][neighbor.city],
+          );
+        }
+      }
+
+      stagnantIterations = improved ? 0 : stagnantIterations + 1;
     }
 
-    if (bestPath.length !== graph.length || !isFinite(bestDistance)) {
+    if (!bestPath || !Number.isFinite(bestDistance)) {
       return null;
     }
 
@@ -140,177 +172,207 @@ export class GraphAlgorithms {
 
   public static solveTravelingSalesmanProblemGA(graph: number[][]): TsmResult | null {
     const numCities = graph.length;
-    const popSize = 20 * numCities;
-    const generations = Math.trunc(100_000 / numCities);
-    const eliteSize = Math.trunc(0.1 * popSize);
-    const mutationRate = 0.05;
+    if (numCities < 2) {
+      return null;
+    }
 
-    const graphCopy = graph.map((row) => row.map((item) => (item === 0 ? Infinity : item)));
+    const isPresentEdge = (weight: number | undefined): weight is number =>
+      weight !== undefined && Number.isFinite(weight) && weight !== 0;
+    const edgeWeight = (from: number, to: number): number | undefined => {
+      const weight = graph[from]?.[to];
 
-    const fitness = (path: number[]): number => {
-      let infinityCount = 0;
-      let total = 0;
-      for (let i = 0; i < path.length; i++) {
-        const weight = graphCopy[path[i]][path[(i + 1) % path.length]];
-        if (!isFinite(Infinity)) {
-          ++infinityCount;
-        }
-
-        total += weight;
-      }
-
-      return 1 / total / (infinityCount + 1);
+      return isPresentEdge(weight) ? weight : undefined;
     };
 
-    const mutate = (path: number[], mutationRate: number): number[] => {
+    for (let city = 0; city < numCities; city++) {
+      const hasOutgoing = graph[city]?.some((weight, target) => target !== city && isPresentEdge(weight));
+      const hasIncoming = graph.some((row, source) => source !== city && isPresentEdge(row?.[city]));
+
+      if (!hasOutgoing || !hasIncoming) {
+        return null;
+      }
+    }
+
+    interface Individual {
+      path: number[];
+      missingEdges: number;
+      cost: number;
+    }
+
+    const compareIndividuals = (left: Individual, right: Individual): number =>
+      left.missingEdges - right.missingEdges || left.cost - right.cost;
+
+    const evaluate = (path: number[]): Individual => {
+      let missingEdges = 0;
+      let cost = 0;
+
+      for (let index = 0; index < path.length; index++) {
+        const weight = edgeWeight(path[index], path[(index + 1) % path.length]);
+        if (weight === undefined) {
+          missingEdges++;
+        } else {
+          cost += weight;
+        }
+      }
+
+      return { path, missingEdges, cost };
+    };
+
+    const randomPath = (): number[] => {
+      const path = Array.from({ length: numCities }, (_, index) => index);
+      for (let index = path.length - 1; index > 0; index--) {
+        const target = Math.floor(Math.random() * (index + 1));
+        [path[index], path[target]] = [path[target], path[index]];
+      }
+
+      return path;
+    };
+
+    const greedyPath = (start: number): number[] => {
+      const path = [start];
+      const used = new Array<boolean>(numCities).fill(false);
+      used[start] = true;
+
+      while (path.length < numCities) {
+        const current = path[path.length - 1];
+        let next = -1;
+        let nextWeight = Infinity;
+
+        for (let city = 0; city < numCities; city++) {
+          const weight = edgeWeight(current, city);
+          if (!used[city] && weight !== undefined && (weight < nextWeight || (weight === nextWeight && city < next))) {
+            next = city;
+            nextWeight = weight;
+          }
+        }
+
+        if (next === -1) {
+          break;
+        }
+
+        path.push(next);
+        used[next] = true;
+      }
+
+      for (let city = 0; city < numCities; city++) {
+        if (!used[city]) {
+          path.push(city);
+        }
+      }
+
+      return path;
+    };
+
+    const mutate = (path: number[]): number[] => {
       const mutatedPath = [...path];
-      if (Math.random() < mutationRate) {
-        let i = Math.floor(Math.random() * mutatedPath.length);
-        let j = Math.floor(Math.random() * mutatedPath.length);
+      if (mutatedPath.length < 2 || Math.random() >= 0.05) {
+        return mutatedPath;
+      }
 
-        while (i === j) {
-          j = Math.floor(Math.random() * mutatedPath.length);
-        }
+      let first = Math.floor(Math.random() * mutatedPath.length);
+      let second = Math.floor(Math.random() * (mutatedPath.length - 1));
+      if (second >= first) {
+        second++;
+      }
 
-        if (j < i) {
-          [i, j] = [j, i];
-        }
+      if (second < first) {
+        [first, second] = [second, first];
+      }
 
-        while (i < j) {
-          [mutatedPath[i], mutatedPath[j]] = [mutatedPath[j], mutatedPath[i]];
-          i++;
-          j--;
-        }
+      while (first < second) {
+        [mutatedPath[first], mutatedPath[second]] = [mutatedPath[second], mutatedPath[first]];
+        first++;
+        second--;
       }
 
       return mutatedPath;
     };
 
     const crossOver = (parent1: number[], parent2: number[]): number[] => {
-      const size = parent1.length;
-      const child = new Array(size).fill(-1);
+      const child = new Array<number>(numCities).fill(-1);
+      const included = new Array<boolean>(numCities).fill(false);
+      const start = Math.floor(Math.random() * numCities);
+      const end = start + Math.floor(Math.random() * (numCities - start));
 
-      // Select a segment
-      const start = Math.floor(Math.random() * size);
-      const end = start + Math.floor(Math.random() * (size - start));
-
-      // Copy the segment from parent1 to child
-      for (let i = start; i <= end; i++) {
-        child[i] = parent1[i];
+      for (let index = start; index <= end; index++) {
+        child[index] = parent1[index];
+        included[parent1[index]] = true;
       }
 
-      // Copy remaining elements from parent2 preserving the order
-      for (let i = 0; i < size; i++) {
-        // If parent2 has a gene not in the child
-        if (!child.includes(parent2[i])) {
-          // Place it in the same position as in parent2 into child
-          let j = i;
-          while (child[j] !== -1) {
-            j = parent1.indexOf(parent2[j]); // Find the position of the conflicting gene in parent1
-          }
-          child[j] = parent2[i];
+      let childIndex = (end + 1) % numCities;
+      for (let offset = 0; offset < numCities; offset++) {
+        const parentIndex = (end + 1 + offset) % numCities;
+        const city = parent2[parentIndex];
+        if (!included[city]) {
+          child[childIndex] = city;
+          included[city] = true;
+          childIndex = (childIndex + 1) % numCities;
         }
       }
 
       return child;
     };
 
-    let population: number[][] = Array.from({ length: popSize }, () => {
-      const path = Array.from({ length: numCities }, (_, i) => i);
-      for (let i = path.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [path[i], path[j]] = [path[j], path[i]];
+    const popSize = 20 * numCities;
+    const generations = Math.trunc(100_000 / numCities);
+    const maxStagnantGenerations = 100;
+    const eliteSize = Math.max(1, Math.trunc(0.1 * popSize));
+    let paths = 0;
+    let bestIndividual: Individual | undefined;
+
+    const evaluateCandidate = (path: number[]): Individual => {
+      const candidate = evaluate(path);
+      paths++;
+      if (!bestIndividual || compareIndividuals(candidate, bestIndividual) < 0) {
+        bestIndividual = candidate;
       }
 
-      return path;
-    });
+      return candidate;
+    };
 
-    let noImprovementCount = 0;
-    let bestIndividual: number[] = [];
-    let previousBestFitness = -Infinity;
-    let paths = 0;
-    for (let generation = 0; generation < generations; generation++) {
-      let bestFitness = -Infinity;
+    let population = Array.from({ length: popSize }, () => evaluateCandidate(randomPath()));
+    for (let start = 0; start < Math.min(numCities, 8); start++) {
+      population.push(evaluateCandidate(greedyPath(start)));
+    }
 
-      // Сортировка популяции по фитнесу
-      population.sort((a, b) => fitness(b) - fitness(a));
-
-      paths += population.length;
-
-      const elite = population.slice(0, eliteSize);
-      // Добавление элиты в новую популяцию
-      const nextPopulation: number[][] = [...elite];
-
-      const rouletteSelection = (
-        population: number[][],
-        fitnessFunc: (path: number[]) => number,
-      ): [number[], number[]] => {
-        const totalFitness = population.reduce((sum, individual) => sum + fitnessFunc(individual), 0);
-
-        const randomFitness1 = Math.random() * totalFitness;
-        let currentSum = 0;
-        let parent1: number[] | undefined;
-        let parent2: number[] | undefined;
-
-        for (const individual of population) {
-          currentSum += fitnessFunc(individual);
-          if (!parent1 && currentSum >= randomFitness1) {
-            parent1 = individual;
-          } else if (parent1 && !parent2 && currentSum >= randomFitness1) {
-            parent2 = individual;
-            break;
-          }
+    const tournamentSelection = (candidates: Individual[]): Individual => {
+      let selected = candidates[Math.floor(Math.random() * candidates.length)];
+      for (let attempt = 1; attempt < 3; attempt++) {
+        const contender = candidates[Math.floor(Math.random() * candidates.length)];
+        if (compareIndividuals(contender, selected) < 0) {
+          selected = contender;
         }
+      }
 
-        // Если parent2 все еще не установлен, выбираем его случайным образом из оставшихся индивидов
-        if (!parent2) {
-          const remainingIndividuals = population.filter((individual) => individual !== parent1);
-          const randomIndex = Math.floor(Math.random() * remainingIndividuals.length);
-          parent2 = remainingIndividuals[randomIndex];
-        }
+      return selected;
+    };
 
-        return [parent1!, parent2!];
-      };
+    let stagnantGenerations = 0;
+    for (let generation = 0; generation < generations && stagnantGenerations < maxStagnantGenerations; generation++) {
+      population.sort(compareIndividuals);
+      const previousBest = bestIndividual!;
+      const nextPopulation = population.slice(0, eliteSize);
 
-      // Кроссовер и мутация
-      for (let i = 0; i < popSize - eliteSize; i++) {
-        let child = crossOver(...rouletteSelection(elite, fitness));
-        child = mutate(child, mutationRate);
-        nextPopulation.push(child);
-
-        // Обновление лучшего индивида
-        const childFitness = fitness(child);
-        if (childFitness > bestFitness) {
-          bestFitness = childFitness;
-          bestIndividual = child;
-        }
+      while (nextPopulation.length < popSize) {
+        const child = mutate(crossOver(tournamentSelection(population).path, tournamentSelection(population).path));
+        nextPopulation.push(evaluateCandidate(child));
       }
 
       population = nextPopulation;
-
-      if (bestFitness > previousBestFitness) {
-        previousBestFitness = bestFitness;
-        noImprovementCount = 0;
+      if (compareIndividuals(bestIndividual!, previousBest) < 0) {
+        stagnantGenerations = 0;
       } else {
-        if (bestFitness > 0) {
-          if (noImprovementCount++ >= 5) {
-            break;
-          }
-        }
+        stagnantGenerations++;
       }
     }
 
-    const calculateTotalDistance = (path: number[]): number =>
-      path.reduce((acc, cur, i) => acc + graphCopy[cur][path[(i + 1) % graphCopy.length]], 0);
-
-    const bestDistance = calculateTotalDistance(bestIndividual);
-    if (!isFinite(bestDistance)) {
+    if (!bestIndividual || bestIndividual.missingEdges > 0 || !Number.isFinite(bestIndividual.cost)) {
       return null;
     }
 
     return {
-      vertices: [...bestIndividual, bestIndividual[0]],
-      distance: bestDistance,
+      vertices: [...bestIndividual.path, bestIndividual.path[0]],
+      distance: bestIndividual.cost,
       paths,
     };
   }
