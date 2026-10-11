@@ -34,11 +34,11 @@ fn fs(@builtin(position) position: vec4f) -> @location(0) vec4f {
 `;
 
 abstract class BaseWebGPU {
-  public adapter: GPUAdapter;
-  public device: GPUDevice;
-  public context: GPUCanvasContext;
-  public presentationFormat: GPUTextureFormat;
-  protected offscreenCanvas: OffscreenCanvas;
+  public adapter!: GPUAdapter | null;
+  public device?: GPUDevice;
+  public context?: GPUCanvasContext | null;
+  public presentationFormat?: GPUTextureFormat;
+  protected offscreenCanvas?: OffscreenCanvas;
 
   public async init(offscreenCanvas: OffscreenCanvas) {
     this.adapter = await navigator.gpu.requestAdapter();
@@ -51,7 +51,7 @@ abstract class BaseWebGPU {
     }
 
     this.offscreenCanvas = offscreenCanvas;
-    this.context = this.offscreenCanvas.getContext('webgpu');
+    this.context = this.offscreenCanvas.getContext('webgpu') as GPUCanvasContext;
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.context.configure({
       device: this.device,
@@ -61,33 +61,33 @@ abstract class BaseWebGPU {
 }
 
 class SolarSystem extends BaseWebGPU {
-  protected module: GPUShaderModule;
-  protected pipeline: GPURenderPipeline;
-  protected renderPassDescriptor: GPURenderPassDescriptor;
-  private bindGroup: GPUBindGroup;
-  private staticUniformBuffer: GPUBuffer;
-  private uniformValues: Float32Array;
-  private settingsUniformBuffer: GPUBuffer;
-  private settingsUniformValues: ArrayBuffer;
+  protected module?: GPUShaderModule;
+  protected pipeline?: GPURenderPipeline;
+  protected renderPassDescriptor!: GPURenderPassDescriptor;
+  private bindGroup?: GPUBindGroup;
+  private staticUniformBuffer?: GPUBuffer;
+  private uniformValues?: Float32Array;
+  private settingsUniformBuffer!: GPUBuffer;
+  private settingsUniformValues!: ArrayBuffer;
 
   public override async init(offscreenCanvas: OffscreenCanvas): Promise<void> {
     await super.init(offscreenCanvas);
 
-    this.module = this.device.createShaderModule({
+    this.module = this.device?.createShaderModule({
       label: 'our hardcoded red triangle shaders',
       code: code,
     });
 
-    this.pipeline = this.device.createRenderPipeline({
+    this.pipeline = this.device?.createRenderPipeline({
       label: 'our hardcoded red triangle pipeline',
       layout: 'auto',
       primitive: { topology: `triangle-strip` },
       vertex: {
-        module: this.module,
+        module: this.module!,
       },
       fragment: {
-        module: this.module,
-        targets: [{ format: this.presentationFormat }],
+        module: this.module!,
+        targets: [{ format: this.presentationFormat! }],
       },
     });
 
@@ -95,6 +95,7 @@ class SolarSystem extends BaseWebGPU {
       label: 'our basic canvas renderPass',
       colorAttachments: [
         {
+          // @ts-ignore
           view: undefined,
           clearValue: [0.3, 0.3, 0.3, 0.1],
           loadOp: 'clear',
@@ -146,15 +147,15 @@ class SolarSystem extends BaseWebGPU {
   }
 
   public render() {
-    this.renderPassDescriptor.colorAttachments[0].view = this.context
+    this.renderPassDescriptor.colorAttachments[0]!.view = this.context!
       .getCurrentTexture()
       .createView();
 
-    const encoder = this.device.createCommandEncoder({ label: 'our encoder' });
+    const encoder = this.device?.createCommandEncoder({ label: 'our encoder' });
 
     // создаем render pass encoder для установке нашего шаблона
-    const pass = encoder.beginRenderPass(this.renderPassDescriptor);
-    pass.setPipeline(this.pipeline);
+    const pass = encoder!.beginRenderPass(this.renderPassDescriptor);
+    pass.setPipeline(this.pipeline!);
     // pass.setBindGroup(0, this.bindGroup);
     pass.draw(3);
     pass.end();
@@ -164,14 +165,14 @@ class SolarSystem extends BaseWebGPU {
     //   encoder.copyBufferToBuffer(resolveBuffer, 0, resultBuffer, 0, resultBuffer.size);
     // }
 
-    const commandBuffer = encoder.finish();
-    this.device.queue.submit([commandBuffer]);
+    const commandBuffer = encoder!.finish();
+    this.device?.queue.submit([commandBuffer]);
   }
 
   public updateSettings(maxIteration: number) {
     const maxIterationBuffer = new Uint32Array(this.settingsUniformValues);
     maxIterationBuffer.set([maxIteration]);
-    this.device.queue.writeBuffer(this.settingsUniformBuffer, 0, this.settingsUniformValues);
+    this.device?.queue.writeBuffer(this.settingsUniformBuffer, 0, this.settingsUniformValues);
   }
 }
 

@@ -1,5 +1,5 @@
 /* eslint-disable */
-export default {
+module.exports = {
   displayName: 'travelling-salesman-problem',
   preset: '../../jest.preset.js',
   transform: {

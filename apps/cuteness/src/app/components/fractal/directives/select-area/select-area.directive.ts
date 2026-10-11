@@ -4,14 +4,14 @@ import { AfterViewInit, Directive, ElementRef, HostListener, output } from '@ang
   selector: '[cutenessSelectArea]',
 })
 export class SelectAreaDirective implements AfterViewInit {
-  private startEvent: MouseEvent | null = null;
+  private startEvent: MouseEvent | TouchEvent | null = null;
   private controlContext: CanvasRenderingContext2D | null = null;
   private controlCanvasElement!: HTMLCanvasElement;
 
   public setDefault = output<void>();
   public selectCoordinates = output<{
-    startEvent: MouseEvent;
-    stopEvent: MouseEvent;
+    startEvent: MouseEvent | TouchEvent;
+    stopEvent: MouseEvent | TouchEvent;
   }>()
 
   constructor(
@@ -25,15 +25,15 @@ export class SelectAreaDirective implements AfterViewInit {
 
   @HostListener('touchstart', ['$event'])
   @HostListener('mousedown', ['$event'])
-  protected start(event: MouseEvent) {
-    if (event.button === 0) {
+  protected start(event: MouseEvent | TouchEvent) {
+    if ("button" in event && event.button === 0) {
       this.startEvent = event;
     }
   }
 
   @HostListener('touchmove', ['$event'])
   @HostListener('mousemove', ['$event'])
-  protected move(event: MouseEvent) {
+  protected move(event: MouseEvent | TouchEvent) {
     if (this.startEvent) {
       this.controlContext?.clearRect(
         0,
@@ -42,10 +42,13 @@ export class SelectAreaDirective implements AfterViewInit {
         this.controlCanvasElement.height,
       );
 
+      // @ts-ignore
       const { offsetX, offsetY } = this.startEvent;
 
+      // @ts-ignore
       const width = event.offsetX - offsetX;
       const height =
+        // @ts-ignore
         ((Math.sign(width * (event.offsetY - offsetY)) * width) / this.controlCanvasElement.width) *
         this.controlCanvasElement.height;
       this.controlContext?.strokeRect(offsetX, offsetY, width, height);
@@ -54,7 +57,7 @@ export class SelectAreaDirective implements AfterViewInit {
 
   @HostListener('touchend', ['$event'])
   @HostListener('mouseup', ['$event'])
-  protected stop(event: MouseEvent) {
+  protected stop(event: MouseEvent | TouchEvent) {
     if (this.startEvent) {
       this.selectCoordinates.emit({
         startEvent: this.startEvent,

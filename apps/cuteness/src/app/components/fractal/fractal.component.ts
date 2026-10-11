@@ -79,19 +79,24 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
     this.worker.terminate();
   }
 
-  protected selectCoordinates({ startEvent, stopEvent }: { startEvent: MouseEvent; stopEvent: MouseEvent }) {
+  protected selectCoordinates({ startEvent, stopEvent }: { startEvent: MouseEvent | TouchEvent; stopEvent: MouseEvent | TouchEvent }) {
+    // @ts-ignore
     const { offsetX, offsetY } = startEvent;
     const perPixel = (this.rightBound - this.leftBound) / this.offscreenCanvas.nativeElement.offsetWidth;
+    // @ts-ignore
 
     let rightBound = Math.max(offsetX, stopEvent.offsetX);
+    // @ts-ignore
     const leftBound = Math.min(offsetX, stopEvent.offsetX);
 
     if (rightBound == leftBound) {
       rightBound += 1;
     }
 
+    // @ts-ignore
     const width = stopEvent.offsetX - offsetX;
     const height =
+      // @ts-ignore
       ((Math.sign(width * (stopEvent.offsetY - offsetY)) * width) / this.offscreenCanvas.nativeElement.width) *
       this.offscreenCanvas.nativeElement.height;
 
@@ -101,7 +106,7 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
     this.render();
   }
 
-  @HostListener('contextmenu', ['$event'])
+  @HostListener('contextmenu')
   protected reset() {
     this.setBound();
     this.render();

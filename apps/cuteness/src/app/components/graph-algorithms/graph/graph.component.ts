@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { EChartsOption } from 'echarts';
 import { NGX_ECHARTS_CONFIG, NgxEchartsModule } from 'ngx-echarts';
 import { GraphEdgeItemOption, GraphNodeItemOption } from 'echarts/types/src/chart/graph/GraphSeries';
@@ -8,6 +8,7 @@ import { GraphEdgeItemOption, GraphNodeItemOption } from 'echarts/types/src/char
   templateUrl: './graph.component.html',
   styleUrls: ['./graph.component.scss'],
   imports: [NgxEchartsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [
     {
       provide: NGX_ECHARTS_CONFIG,

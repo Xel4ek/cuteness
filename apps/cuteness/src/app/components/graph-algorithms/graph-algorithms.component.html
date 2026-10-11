@@ -68,12 +68,12 @@
 <div style="overflow-x:auto;" *ngIf="adjacencyMatrix.length">
   <cuteness-graph
     [adjacencyMatrix]="adjacencyMatrix"
-    [solution]="solution?.vertices"
+    [solution]="$safeNavigationMigration(solution?.vertices)"
     [style.margin-bottom.rem]="1"
   />
   <cuteness-matrix
     [adjacencyMatrix]="adjacencyMatrix"
-    [solution]="solution?.vertices"
+    [solution]="$safeNavigationMigration(solution?.vertices)"
   />
 </div>
 

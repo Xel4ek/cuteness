@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButton } from '@angular/material/button';
 
@@ -6,6 +6,7 @@ import { MatButton } from '@angular/material/button';
   selector: 'cuteness-opfs',
   imports: [CommonModule, MatButton],
   templateUrl: './opfs.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './opfs.component.scss',
 })
 export class OpfsComponent {

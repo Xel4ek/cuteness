@@ -2,6 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { GraphAlgorithmsComponent } from './graph-algorithms.component';
 
+import { beforeEach, it, expect, describe } from 'vitest';
+
 describe('AntColonyComponent', () => {
   let component: GraphAlgorithmsComponent;
   let fixture: ComponentFixture<GraphAlgorithmsComponent>;

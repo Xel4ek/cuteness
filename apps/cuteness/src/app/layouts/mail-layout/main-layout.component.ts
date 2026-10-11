@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, ViewChild } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
-import { MatSidenav } from '@angular/material/sidenav';
+import { MatSidenav } from "@angular/material/sidenav";
 import { filter } from 'rxjs';
 import { MainLayoutHeaderService } from './main-layout-header.service';
 
