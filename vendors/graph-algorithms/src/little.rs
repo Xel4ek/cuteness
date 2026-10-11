@@ -74,13 +74,17 @@ pub fn solve_traveling_salesman_problem_little_js(data: &str) -> String {
 }
 
 pub fn solve_traveling_salesman_problem_little(matrix: Vec<Vec<u32>>) -> Option<TsmResult> {
+    if matrix.len() < 2 {
+        return None;
+    }
+
     let mut steps = 0;
     let mut queue = BinaryHeap::new();
     queue.push(Graph::new(matrix));
 
     while let Some(mut graph) = queue.pop() {
-        if graph.lower_bound == u32::MAX as u64 {
-            return None;
+        if graph.lower_bound == u64::MAX {
+            continue;
         }
 
         if graph.matrix.len() == 1 {
@@ -100,12 +104,106 @@ pub fn solve_traveling_salesman_problem_little(matrix: Vec<Vec<u32>>) -> Option<
         }
 
         if let Some(penalty) = penalty_option {
-            graph.redux(Some(penalty as u64));
-            queue.push(graph);
+            if penalty != u64::MAX {
+                graph.redux(Some(penalty));
+                if graph.lower_bound != u64::MAX {
+                    queue.push(graph);
+                }
+            }
         }
 
         steps += 1;
     }
 
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::solve_traveling_salesman_problem_little;
+
+    fn assert_hamiltonian_cycle(matrix: &[Vec<u32>], path: &[u16], expected_distance: u64) {
+        assert_eq!(path.len(), matrix.len() + 1);
+        assert_eq!(path.first(), path.last());
+
+        let mut unique_vertices = path[..path.len() - 1].to_vec();
+        unique_vertices.sort_unstable();
+        unique_vertices.dedup();
+        assert_eq!(unique_vertices.len(), matrix.len());
+
+        let distance = path
+            .windows(2)
+            .map(|edge| matrix[edge[0] as usize][edge[1] as usize] as u64)
+            .sum::<u64>();
+        assert_eq!(distance, expected_distance);
+    }
+
+    #[test]
+    fn solves_a_closed_two_city_cycle() {
+        let matrix = vec![vec![u32::MAX, 7], vec![11, u32::MAX]];
+
+        let result =
+            solve_traveling_salesman_problem_little(matrix.clone()).expect("a two-city cycle");
+
+        assert_eq!(result.distance, 18);
+        assert_hamiltonian_cycle(&matrix, &result.path, 18);
+    }
+
+    #[test]
+    fn returns_none_when_no_hamiltonian_cycle_exists() {
+        let matrix = vec![
+            vec![u32::MAX, 4, u32::MAX],
+            vec![4, u32::MAX, u32::MAX],
+            vec![u32::MAX, u32::MAX, u32::MAX],
+        ];
+
+        assert!(solve_traveling_salesman_problem_little(matrix).is_none());
+    }
+
+    #[test]
+    fn does_not_treat_the_absence_sentinel_as_an_edge() {
+        let matrix = vec![
+            vec![u32::MAX, 1, u32::MAX],
+            vec![u32::MAX, u32::MAX, 1],
+            vec![u32::MAX, u32::MAX, u32::MAX],
+        ];
+
+        assert!(solve_traveling_salesman_problem_little(matrix).is_none());
+    }
+
+    #[test]
+    fn supports_distances_above_u32_max() {
+        let matrix = vec![
+            vec![u32::MAX, 2_000_000_000, 2_000_000_001],
+            vec![2_000_000_001, u32::MAX, 2_000_000_000],
+            vec![2_000_000_000, 2_000_000_001, u32::MAX],
+        ];
+
+        let result =
+            solve_traveling_salesman_problem_little(matrix.clone()).expect("a finite cycle");
+
+        assert_eq!(result.distance, 6_000_000_000);
+        assert_hamiltonian_cycle(&matrix, &result.path, 6_000_000_000);
+    }
+
+    #[test]
+    fn accepts_a_cycle_whose_total_distance_is_exactly_u32_max() {
+        let edge = u32::MAX / 3;
+        let matrix = vec![
+            vec![u32::MAX, edge, edge + 1],
+            vec![edge + 1, u32::MAX, edge],
+            vec![edge, edge + 1, u32::MAX],
+        ];
+
+        let result =
+            solve_traveling_salesman_problem_little(matrix.clone()).expect("a finite cycle");
+
+        assert_eq!(result.distance, u32::MAX as u64);
+        assert_hamiltonian_cycle(&matrix, &result.path, u32::MAX as u64);
+    }
+
+    #[test]
+    fn returns_none_for_an_empty_matrix() {
+        assert!(solve_traveling_salesman_problem_little(Vec::new()).is_none());
+    }
 }

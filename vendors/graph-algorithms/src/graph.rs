@@ -96,32 +96,27 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_graph_new() {
+    fn new_reduces_the_matrix_and_records_its_lower_bound() {
         let matrix = vec![
             vec![u32::MAX, 1, 2],
             vec![1, u32::MAX, 3],
             vec![2, 3, u32::MAX],
         ];
 
-        let target = vec![
-            vec![u32::MAX, 0, 0], // 1
-            vec![0, u32::MAX, 1], // 1
-            vec![0, 1, u32::MAX], // 2
-                                  //   0              0             1
-        ];
+        let graph = Graph::new(matrix);
 
-        let mut graph = Graph::new(matrix.clone());
-
-        assert_eq!(5, graph.redux(Some(0)));
         assert!(graph.path.is_empty());
         assert_eq!(graph.lower_bound, 5);
+        assert_eq!(graph.matrix[[0, 1]].value, 0);
+        assert_eq!(graph.matrix[[1, 0]].value, 0);
+        assert_eq!(graph.matrix[[2, 0]].value, 0);
     }
 
     #[test]
-    fn test_graph_new_with_empty_matrix() {
+    fn new_accepts_an_empty_matrix() {
         let matrix: Vec<Vec<u32>> = Vec::new();
 
-        let graph = Graph::new(matrix.clone());
+        let graph = Graph::new(matrix);
 
         assert!(graph.path.is_empty());
         assert_eq!(graph.lower_bound, 0);

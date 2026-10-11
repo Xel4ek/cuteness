@@ -10,6 +10,7 @@ node_modules
 
 # IDEs and editors
 **/.idea
+*.iml
 .project
 .classpath
 .c9/
@@ -51,5 +52,10 @@ vitest.config.*.timestamp*
 .vitest
 
 # Generated Rust / WebAssembly packages
+/target/
 /vendors/*/target/
 /vendors/*/pkg/
+/vendors/*/Cargo.lock
+/vendors/*/bin/
+*.rs.bk
+wasm-pack.log

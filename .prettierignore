@@ -6,7 +6,8 @@
 /.nx
 /.angular
 /.serena
-/.idea
+**/.idea
+**/*.iml
 **/target
 **/pkg
 **/vitest.config.*.timestamp*

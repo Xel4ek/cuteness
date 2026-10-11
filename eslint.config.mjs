@@ -78,6 +78,6 @@ export default [
     },
   },
   {
-    ignores: ['**/vitest.config.*.timestamp*'],
+    ignores: ['**/vitest.config.*.timestamp*', '**/target/**', '**/pkg/**'],
   },
 ];

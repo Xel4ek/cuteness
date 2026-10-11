@@ -33,7 +33,17 @@
       "!{projectRoot}/eslint.config.mjs",
       "!{projectRoot}/src/test-setup.[jt]s"
     ],
-    "sharedGlobals": []
+    "sharedGlobals": [],
+    "rustInputs": [
+      "{projectRoot}/src/**/*.rs",
+      "{projectRoot}/tests/**/*.rs",
+      "{projectRoot}/Cargo.toml",
+      "{projectRoot}/project.json",
+      "{projectRoot}/README.md",
+      "{projectRoot}/LICENSE*",
+      "{workspaceRoot}/Cargo.toml",
+      "{workspaceRoot}/Cargo.lock"
+    ]
   },
   "generators": {
     "@nx/angular:application": {

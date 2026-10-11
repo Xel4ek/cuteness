@@ -1,4 +1,4 @@
-use graph_algorithms::solve_traveling_salesman_problem_little;
+use graph_algorithms_wasm::solve_traveling_salesman_problem_little;
 use std::env;
 use std::fs::File;
 use std::io::Read;

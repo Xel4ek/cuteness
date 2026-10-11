@@ -1,0 +1,51 @@
+{
+  "name": "rust-solar-system",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "vendors/solar-system/src",
+  "projectType": "library",
+  "tags": ["language:rust"],
+  "namedInputs": {
+    "default": ["rustInputs"],
+    "production": ["default"]
+  },
+  "targets": {
+    "build": {
+      "command": "wasm-pack build vendors/solar-system --target bundler --scope cuteness -- --locked",
+      "options": {
+        "forwardAllArgs": false
+      },
+      "inputs": [
+        "default",
+        {
+          "runtime": "rustc --version"
+        },
+        {
+          "runtime": "wasm-pack --version"
+        }
+      ],
+      "outputs": ["{projectRoot}/pkg"],
+      "cache": true
+    },
+    "test": {
+      "command": "cargo test -p solar-system --locked",
+      "options": {
+        "forwardAllArgs": false
+      },
+      "inputs": [
+        "default",
+        {
+          "runtime": "rustc --version"
+        }
+      ],
+      "outputs": [],
+      "cache": true
+    },
+    "lint": {
+      "command": "cargo clippy -p solar-system --all-targets --locked",
+      "options": {
+        "forwardAllArgs": false
+      },
+      "cache": false
+    }
+  }
+}

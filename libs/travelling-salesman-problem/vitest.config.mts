@@ -9,7 +9,6 @@ export default defineConfig(() => ({
     name: 'travelling-salesman-problem',
     watch: false,
     environment: 'node',
-    passWithNoTests: true,
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],
     typecheck: {

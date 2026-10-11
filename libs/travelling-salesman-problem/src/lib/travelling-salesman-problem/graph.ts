@@ -91,12 +91,12 @@ export class Graph implements Comparable {
     return result;
   }
 
-  public dryReduceMatrix(row: number, col: number, penalty: number) {
+  public dryReduceMatrix(row: number, col: number, _penalty: number) {
     this.blockPath(row, col);
-    this.lowerBound += penalty;
 
-    const { matrix } = Graph.reduceMatrix(this.matrix);
+    const { matrix, lowerBound } = Graph.reduceMatrix(this.matrix);
     this.matrix = matrix;
+    this.lowerBound += lowerBound;
   }
 
   public transform(row: number, col: number) {
@@ -105,11 +105,33 @@ export class Graph implements Comparable {
 
     const updated = this.matrix.map((row) => [...row]);
 
-    const blockCol = this.indexes.cols.indexOf(row);
-    const blockRow = this.indexes.rows.indexOf(col);
+    const newPath: [number, number][] = [...this.path, [row, col]];
+    let head = row;
+    let tail = col;
 
-    if (blockCol !== -1 && blockRow !== -1) {
-      updated[blockRow][blockCol] = Infinity;
+    while (true) {
+      const predecessor = newPath.find(([_, destination]) => destination === head);
+      if (!predecessor) {
+        break;
+      }
+      head = predecessor[0];
+    }
+
+    while (true) {
+      const successor = newPath.find(([origin]) => origin === tail);
+      if (!successor) {
+        break;
+      }
+      tail = successor[1];
+    }
+
+    if (this.matrix.length > 2) {
+      const blockCol = this.indexes.cols.indexOf(head);
+      const blockRow = this.indexes.rows.indexOf(tail);
+
+      if (blockCol !== -1 && blockRow !== -1) {
+        updated[blockRow][blockCol] = Infinity;
+      }
     }
 
     const newMatrix = updated
@@ -125,29 +147,54 @@ export class Graph implements Comparable {
         rows: this.indexes.rows.filter((_, index) => index !== curRow),
         cols: this.indexes.cols.filter((_, index) => index !== curCol),
       },
-      [...this.path, [row, col]],
+      newPath,
     );
   }
 
   public calculatePenalties() {
     let maxPenalty = -Infinity;
     let maxPenaltyPos: [number, number] | undefined;
-    const penalties: number[][] = Array(this.matrix.length)
-      .fill(0)
-      .map(() => Array(this.matrix.length).fill(0));
+    const rowAlternatives = this.matrix.map((row) => {
+      let first = Infinity;
+      let second = Infinity;
+
+      for (const value of row) {
+        if (value <= first) {
+          second = first;
+          first = value;
+        } else if (value < second) {
+          second = value;
+        }
+      }
+
+      return { first, second };
+    });
+    const columnAlternatives = this.matrix[0].map((_, column) => {
+      let first = Infinity;
+      let second = Infinity;
+
+      for (const row of this.matrix) {
+        const value = row[column];
+        if (value <= first) {
+          second = first;
+          first = value;
+        } else if (value < second) {
+          second = value;
+        }
+      }
+
+      return { first, second };
+    });
 
     for (let i = 0; i < this.matrix.length; i++) {
       for (let j = 0; j < this.matrix[i].length; j++) {
         if (this.matrix[i][j] === 0) {
-          const rowMin = Math.min(...this.matrix[i].filter((val, idx) => idx !== j && val !== Infinity));
-          const colMin = Math.min(
-            ...this.matrix.map((row, idx) => (idx !== i && row[j] !== Infinity ? row[j] : Infinity)),
-          );
+          const rowMin = rowAlternatives[i].second;
+          const colMin = columnAlternatives[j].second;
+          const penalty = rowMin + colMin;
 
-          penalties[i][j] = rowMin + colMin;
-
-          if (penalties[i][j] >= maxPenalty) {
-            maxPenalty = penalties[i][j];
+          if (penalty >= maxPenalty) {
+            maxPenalty = penalty;
             maxPenaltyPos = [i, j];
           }
         }

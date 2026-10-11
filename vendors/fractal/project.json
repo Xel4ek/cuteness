@@ -1,0 +1,51 @@
+{
+  "name": "rust-fractal",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "vendors/fractal/src",
+  "projectType": "library",
+  "tags": ["language:rust"],
+  "namedInputs": {
+    "default": ["rustInputs"],
+    "production": ["default"]
+  },
+  "targets": {
+    "build": {
+      "command": "wasm-pack build vendors/fractal --target bundler --scope cuteness -- --locked",
+      "options": {
+        "forwardAllArgs": false
+      },
+      "inputs": [
+        "default",
+        {
+          "runtime": "rustc --version"
+        },
+        {
+          "runtime": "wasm-pack --version"
+        }
+      ],
+      "outputs": ["{projectRoot}/pkg"],
+      "cache": true
+    },
+    "test": {
+      "command": "cargo test -p fractal --locked",
+      "options": {
+        "forwardAllArgs": false
+      },
+      "inputs": [
+        "default",
+        {
+          "runtime": "rustc --version"
+        }
+      ],
+      "outputs": [],
+      "cache": true
+    },
+    "lint": {
+      "command": "cargo clippy -p fractal --all-targets --locked",
+      "options": {
+        "forwardAllArgs": false
+      },
+      "cache": false
+    }
+  }
+}

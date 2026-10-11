@@ -5,6 +5,7 @@
   "sourceRoot": "apps/cuteness/src",
   "prefix": "cuteness",
   "tags": [],
+  "implicitDependencies": ["rust-fractal", "rust-graph-algorithms", "rust-solar-system"],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:browser",
@@ -62,6 +63,7 @@
       }
     },
     "serve": {
+      "dependsOn": ["^build"],
       "executor": "@angular-devkit/build-angular:dev-server",
       "defaultConfiguration": "development",
       "continuous": true,

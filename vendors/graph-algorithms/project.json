@@ -1,0 +1,51 @@
+{
+  "name": "rust-graph-algorithms",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "vendors/graph-algorithms/src",
+  "projectType": "library",
+  "tags": ["language:rust"],
+  "namedInputs": {
+    "default": ["rustInputs"],
+    "production": ["default"]
+  },
+  "targets": {
+    "build": {
+      "command": "wasm-pack build vendors/graph-algorithms --target bundler --scope cuteness -- --locked",
+      "options": {
+        "forwardAllArgs": false
+      },
+      "inputs": [
+        "default",
+        {
+          "runtime": "rustc --version"
+        },
+        {
+          "runtime": "wasm-pack --version"
+        }
+      ],
+      "outputs": ["{projectRoot}/pkg"],
+      "cache": true
+    },
+    "test": {
+      "command": "cargo test -p graph-algorithms-wasm --locked",
+      "options": {
+        "forwardAllArgs": false
+      },
+      "inputs": [
+        "default",
+        {
+          "runtime": "rustc --version"
+        }
+      ],
+      "outputs": [],
+      "cache": true
+    },
+    "lint": {
+      "command": "cargo clippy -p graph-algorithms-wasm --all-targets --locked",
+      "options": {
+        "forwardAllArgs": false
+      },
+      "cache": false
+    }
+  }
+}

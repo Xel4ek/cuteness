@@ -15,7 +15,10 @@
     "skipDefaultLibCheck": true,
     "paths": {
       "@cuteness/rsa": ["./libs/rsa/src/index.ts"],
-      "@cuteness/travelling-salesman-problem": ["./libs/travelling-salesman-problem/src/index.ts"]
+      "@cuteness/travelling-salesman-problem": ["./libs/travelling-salesman-problem/src/index.ts"],
+      "@cuteness/fractal": ["./vendors/fractal/pkg"],
+      "@cuteness/graph-algorithms-wasm": ["./vendors/graph-algorithms/pkg"],
+      "@cuteness/solar-system": ["./vendors/solar-system/pkg"]
     }
   },
   "exclude": ["node_modules", "tmp"]
