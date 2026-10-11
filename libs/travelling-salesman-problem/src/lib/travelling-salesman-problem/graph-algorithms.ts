@@ -324,7 +324,7 @@ export class GraphAlgorithms {
     queue.enqueue(new Graph(matrix, lowerBound));
 
     while (!queue.isEmpty()) {
-      const candidate= queue.dequeue();
+      const candidate = queue.dequeue();
 
       if (!candidate || !candidate.valid) {
         return null;
@@ -337,7 +337,7 @@ export class GraphAlgorithms {
             vertices,
             distance: candidate.distance,
             paths,
-          }
+          };
         }
 
         continue;
@@ -349,7 +349,7 @@ export class GraphAlgorithms {
       } = candidate.calculatePenalties();
 
       if (penalty === -1) {
-        return  null;
+        return null;
       }
 
       queue.enqueue(candidate.transform(row, col));

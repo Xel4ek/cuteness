@@ -63,7 +63,7 @@ abstract class BaseWebGPU {
 class SolarSystem extends BaseWebGPU {
   protected module?: GPUShaderModule;
   protected pipeline?: GPURenderPipeline;
-  protected renderPassDescriptor!: GPURenderPassDescriptor;
+  protected renderPassDescriptor!: GPURenderPassDescriptor & { colorAttachments: [GPURenderPassColorAttachment] };
   private bindGroup?: GPUBindGroup;
   private staticUniformBuffer?: GPUBuffer;
   private uniformValues?: Float32Array;
@@ -72,6 +72,11 @@ class SolarSystem extends BaseWebGPU {
 
   public override async init(offscreenCanvas: OffscreenCanvas): Promise<void> {
     await super.init(offscreenCanvas);
+
+    const context = this.context;
+    if (!context) {
+      throw new Error('Could not create a WebGPU canvas context');
+    }
 
     this.module = this.device?.createShaderModule({
       label: 'our hardcoded red triangle shaders',
@@ -95,8 +100,7 @@ class SolarSystem extends BaseWebGPU {
       label: 'our basic canvas renderPass',
       colorAttachments: [
         {
-          // @ts-ignore
-          view: undefined,
+          view: context.getCurrentTexture().createView(),
           clearValue: [0.3, 0.3, 0.3, 0.1],
           loadOp: 'clear',
           storeOp: 'store',
@@ -147,9 +151,7 @@ class SolarSystem extends BaseWebGPU {
   }
 
   public render() {
-    this.renderPassDescriptor.colorAttachments[0]!.view = this.context!
-      .getCurrentTexture()
-      .createView();
+    this.renderPassDescriptor.colorAttachments[0]!.view = this.context!.getCurrentTexture().createView();
 
     const encoder = this.device?.createCommandEncoder({ label: 'our encoder' });
 
@@ -186,17 +188,15 @@ export enum WorkerEvent {
   settings = 'settings',
 }
 
-
 export type SolarSystemWorkerCommand =
   | {
-  type: WorkerEvent.init;
-  offscreenCanvas: OffscreenCanvas;
-}
+      type: WorkerEvent.init;
+      offscreenCanvas: OffscreenCanvas;
+    }
   | {
-  type: WorkerEvent.settings;
-  maxIteration: number;
-};
-
+      type: WorkerEvent.settings;
+      maxIteration: number;
+    };
 
 self.onmessage = async ({ data }: MessageEvent<SolarSystemWorkerCommand>) => {
   switch (data.type) {

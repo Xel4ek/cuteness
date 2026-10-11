@@ -85,7 +85,7 @@ abstract class BaseWebGPU {
 class Mandelbrot extends BaseWebGPU {
   protected module!: GPUShaderModule;
   protected pipeline!: GPURenderPipeline;
-  protected renderPassDescriptor!: GPURenderPassDescriptor;
+  protected renderPassDescriptor!: GPURenderPassDescriptor & { colorAttachments: [GPURenderPassColorAttachment] };
   private bindGroup!: GPUBindGroup;
   private staticUniformBuffer!: GPUBuffer;
   private uniformValues!: Float32Array;
@@ -94,6 +94,11 @@ class Mandelbrot extends BaseWebGPU {
 
   public override async init(offscreenCanvas: OffscreenCanvas): Promise<void> {
     await super.init(offscreenCanvas);
+
+    const context = this.context;
+    if (!context) {
+      throw new Error('Could not create a WebGPU canvas context');
+    }
 
     this.module = this.device!.createShaderModule({
       label: 'our hardcoded red triangle shaders',
@@ -116,8 +121,7 @@ class Mandelbrot extends BaseWebGPU {
       label: 'our basic canvas renderPass',
       colorAttachments: [
         {
-          // @ts-ignore
-          view: undefined,
+          view: context.getCurrentTexture().createView(),
           clearValue: [0.3, 0.3, 0.3, 0.1],
           loadOp: 'clear',
           storeOp: 'store',
@@ -151,7 +155,7 @@ class Mandelbrot extends BaseWebGPU {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    this.settingsUniformValues = new ArrayBuffer(settingsUniformBufferSize)
+    this.settingsUniformValues = new ArrayBuffer(settingsUniformBufferSize);
     this.updateSettings(500);
 
     this.bindGroup = this.device!.createBindGroup({
@@ -165,17 +169,15 @@ class Mandelbrot extends BaseWebGPU {
   }
 
   public updateUniforms(leftBound: number, rightBound: number, topBound?: number) {
-    const pixPerDin = (rightBound - leftBound)/this.offscreenCanvas.width;
-    const hPix = -this.offscreenCanvas.height * pixPerDin / 2;
+    const pixPerDin = (rightBound - leftBound) / this.offscreenCanvas.width;
+    const hPix = (-this.offscreenCanvas.height * pixPerDin) / 2;
 
     this.uniformValues.set([pixPerDin, pixPerDin, leftBound, topBound ?? hPix]);
     this.device?.queue.writeBuffer(this.staticUniformBuffer, 0, this.uniformValues);
   }
 
   public render() {
-    this.renderPassDescriptor.colorAttachments[0]!.view = this.context!
-      .getCurrentTexture()
-      .createView();
+    this.renderPassDescriptor.colorAttachments[0]!.view = this.context!.getCurrentTexture().createView();
 
     const encoder = this.device!.createCommandEncoder({ label: 'our encoder' });
 
@@ -220,4 +222,4 @@ self.onmessage = async ({ data }: MessageEvent<MandelbrotWorkerCommand>) => {
   }
 
   requestAnimationFrame(render);
-}
+};

@@ -3,12 +3,16 @@
 </button>
 <div class="table-content">
   <table>
-    <tr *ngFor="let row of adjacencyMatrix; index as i">
-      <td *ngFor="let cell of row; index as j" class="cell" [class.used]="inSolution(i, j)">
-        <span [matTooltip]="(cell | number) ?? ''" [class.infinity]="cell === 0">
-          {{ cell | number | replaceZeroWithInfinity }}
-        </span>
-      </td>
-    </tr>
+    @for (row of adjacencyMatrix; track row; let i = $index) {
+      <tr>
+        @for (cell of row; track cell; let j = $index) {
+          <td class="cell" [class.used]="inSolution(i, j)">
+            <span [matTooltip]="(cell | number) ?? ''" [class.infinity]="cell === 0">
+              {{ cell | number | replaceZeroWithInfinity }}
+            </span>
+          </td>
+        }
+      </tr>
+    }
   </table>
 </div>

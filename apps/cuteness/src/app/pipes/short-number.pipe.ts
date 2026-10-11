@@ -19,9 +19,8 @@ export class ShortNumberPipe implements PipeTransform {
     const isNegative = value < 0;
     let key = '';
 
-
     for (let i = 0; i < this.powers.length; i++) {
-      const reduced = Math.round(abs / this.powers[i].value * rounder) / rounder;
+      const reduced = Math.round((abs / this.powers[i].value) * rounder) / rounder;
 
       if (reduced >= 1) {
         abs = reduced;

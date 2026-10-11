@@ -6,8 +6,9 @@ import {
   HostListener,
   OnDestroy,
   ViewChild,
+  inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FullScreenDirective } from './directives/full-screen/full-screen.directive';
 import { MatButtonModule } from '@angular/material/button';
 import { MainLayoutHeaderService } from '../../layouts/mail-layout/main-layout-header.service';
@@ -17,16 +18,20 @@ import { MandelbrotWorkerCommand } from './worker/mandelbrot-worker-command';
 import { SceneControlComponent } from '../scena-control/scene-control.component';
 import { ControlAction } from '../scena-control/control-action';
 import { SelectAreaDirective } from './directives/select-area/select-area.directive';
+import { getCanvasCoordinates } from './canvas-coordinates';
 
 @Component({
   selector: 'cuteness-fractal',
-  imports: [CommonModule, FullScreenDirective, MatButtonModule, SceneControlComponent, SelectAreaDirective],
+  imports: [FullScreenDirective, MatButtonModule, SceneControlComponent, SelectAreaDirective],
   templateUrl: './fractal.component.html',
   styleUrls: ['./fractal.component.scss'],
   providers: [ShortNumberPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class FractalComponent implements AfterViewInit, OnDestroy {
+  private readonly mainLayoutHeaderService = inject(MainLayoutHeaderService);
+  private readonly shortNumberPipe = inject(ShortNumberPipe);
+
   private readonly worker: Worker = new Worker(new URL('./worker/fractal.worker.ts', import.meta.url), {
     type: 'module',
   });
@@ -56,11 +61,6 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
     },
   ];
 
-  constructor(
-    private readonly mainLayoutHeaderService: MainLayoutHeaderService,
-    private readonly shortNumberPipe: ShortNumberPipe,
-  ) {}
-
   public ngAfterViewInit(): void {
     this.controlContext = this.controlCanvasElement.nativeElement.getContext('2d');
     if (this.controlContext) {
@@ -79,25 +79,33 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
     this.worker.terminate();
   }
 
-  protected selectCoordinates({ startEvent, stopEvent }: { startEvent: MouseEvent | TouchEvent; stopEvent: MouseEvent | TouchEvent }) {
-    // @ts-ignore
-    const { offsetX, offsetY } = startEvent;
-    const perPixel = (this.rightBound - this.leftBound) / this.offscreenCanvas.nativeElement.offsetWidth;
-    // @ts-ignore
+  protected selectCoordinates({
+    startEvent,
+    stopEvent,
+  }: {
+    startEvent: MouseEvent | TouchEvent;
+    stopEvent: MouseEvent | TouchEvent;
+  }) {
+    const canvas = this.controlCanvasElement.nativeElement;
+    const start = getCanvasCoordinates(startEvent, canvas);
+    const stop = getCanvasCoordinates(stopEvent, canvas);
+    if (!start || !stop) {
+      return;
+    }
 
-    let rightBound = Math.max(offsetX, stopEvent.offsetX);
-    // @ts-ignore
-    const leftBound = Math.min(offsetX, stopEvent.offsetX);
+    const { offsetX, offsetY } = start;
+    const perPixel = (this.rightBound - this.leftBound) / this.offscreenCanvas.nativeElement.offsetWidth;
+
+    let rightBound = Math.max(offsetX, stop.offsetX);
+    const leftBound = Math.min(offsetX, stop.offsetX);
 
     if (rightBound == leftBound) {
       rightBound += 1;
     }
 
-    // @ts-ignore
-    const width = stopEvent.offsetX - offsetX;
+    const width = stop.offsetX - offsetX;
     const height =
-      // @ts-ignore
-      ((Math.sign(width * (stopEvent.offsetY - offsetY)) * width) / this.offscreenCanvas.nativeElement.width) *
+      ((Math.sign(width * (stop.offsetY - offsetY)) * width) / this.offscreenCanvas.nativeElement.width) *
       this.offscreenCanvas.nativeElement.height;
 
     this.leftBound += leftBound * perPixel;

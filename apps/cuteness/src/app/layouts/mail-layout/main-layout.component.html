@@ -8,11 +8,11 @@
         @for (item of info$ | async | keyvalue: null; track $index) {
           <span class="info">{{ item.key | titlecase }}: {{ item.value }}</span>
         }
-        </span>
+      </span>
     </mat-toolbar>
 
     <mat-sidenav-container class="full-screen">
-      <mat-sidenav #nav mode='over' class="sidenav">
+      <mat-sidenav #nav mode="over" class="sidenav">
         <mat-nav-list>
           @for (nav of modules; track nav) {
             <a mat-list-item [routerLink]="['/', getRoute(nav)]">{{ nav }}</a>
@@ -26,4 +26,3 @@
     </mat-sidenav-container>
   </mat-drawer-content>
 </mat-drawer-container>
-

@@ -3,6 +3,11 @@
 /dist
 /coverage
 
-/.nx/cache
-/.nx/workspace-data
-.nx/self-healing
+/.nx
+/.angular
+/.serena
+/.idea
+**/target
+**/pkg
+**/vitest.config.*.timestamp*
+**/vite.config.*.timestamp*

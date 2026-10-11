@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { Route } from '@angular/router';
@@ -38,6 +38,8 @@ interface Method {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
+
   protected adjacencyMatrix: number[][] = [];
   protected displayedColumns: string[] = [];
   protected solution?: TsmResult | null;
@@ -78,10 +80,6 @@ export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
 
   private worker: Worker = new Worker(new URL('./tsp.worker.ts', import.meta.url));
   private startTime = 0;
-
-  constructor(
-    private readonly changeDetectorRef: ChangeDetectorRef,
-  ) { }
 
   public ngOnInit(): void {
     this.worker.onmessage = ({ data }) => {
@@ -124,6 +122,5 @@ export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
     return `${seconds}.${Math.trunc(milliseconds)} s`;
   }
 }
-
 
 export default [{ path: '', component: GraphAlgorithmsComponent }] as Route[];

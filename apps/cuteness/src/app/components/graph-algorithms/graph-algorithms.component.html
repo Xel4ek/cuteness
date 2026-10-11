@@ -1,84 +1,66 @@
 <div class="slider__group">
   <div class="slider__block">
     Size: {{ size }}
-    <mat-slider
-      class="example-slider"
-      [max]="selected.limit"
-      [min]="3"
-      [step]="1"
-    >
-      <input matSliderThumb [(ngModel)]="size">
+    <mat-slider class="example-slider" [max]="selected.limit" [min]="3" [step]="1">
+      <input matSliderThumb [(ngModel)]="size" />
     </mat-slider>
   </div>
   <div class="slider__block">
     <span>Fill: {{ chance * 100 | number: '.0-0' }} %</span>
-    <mat-slider
-      class="example-slider"
-      [max]="1"
-      [min]="0"
-      [step]=".01"
-    >
-      <input matSliderThumb [(ngModel)]="chance">
+    <mat-slider class="example-slider" [max]="1" [min]="0" [step]="0.01">
+      <input matSliderThumb [(ngModel)]="chance" />
     </mat-slider>
   </div>
 </div>
 <div class="button__block">
-  <button
-    mat-button
-    (click)="generateMatrix()"
-    [disabled]="processing"
-    class="button"
-  >
-    Generate
-  </button>
-  <button
-    mat-button
-    *ngIf="adjacencyMatrix.length"
-    (click)="solve()"
-    [disabled]="processing"
-    class="button"
-  >
-    Calc
-  </button>
-  <mat-form-field appearance="outline" class="button" *ngIf="adjacencyMatrix.length">
-    <mat-label>Choose method</mat-label>
-    <mat-select [(value)]="selected" (valueChange)="resetGraph()" [disabled]="processing">
-      <mat-option *ngFor="let method of methods" [value]="method">
-        {{ method.title }}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
+  <button mat-button (click)="generateMatrix()" [disabled]="processing" class="button">Generate</button>
+  @if (adjacencyMatrix.length) {
+    <button mat-button (click)="solve()" [disabled]="processing" class="button">Calc</button>
+  }
+  @if (adjacencyMatrix.length) {
+    <mat-form-field appearance="outline" class="button">
+      <mat-label>Choose method</mat-label>
+      <mat-select [(value)]="selected" (valueChange)="resetGraph()" [disabled]="processing">
+        @for (method of methods; track method) {
+          <mat-option [value]="method">
+            {{ method.title }}
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
 </div>
-<div *ngIf="processing" class="info">
-  <mat-spinner class="spinner"></mat-spinner>
-  {{ elapsedTime$ | async }}
-</div>
-<div *ngIf="solution">
+@if (processing) {
   <div class="info">
-    [{{ solution.paths | number }}] ({{ executionTime }}) Distance: {{ solution.distance | number: '.0-2' }}
+    <mat-spinner class="spinner"></mat-spinner>
+    {{ elapsedTime$ | async }}
   </div>
-  <div class="info">
-    {{ solution.vertices.join(' ➢ ') }}
+}
+@if (solution) {
+  <div>
+    <div class="info">
+      [{{ solution.paths | number }}] ({{ executionTime }}) Distance: {{ solution.distance | number: '.0-2' }}
+    </div>
+    <div class="info">
+      {{ solution.vertices.join(' ➢ ') }}
+    </div>
   </div>
-</div>
+}
 
-<div *ngIf="solution === null" style="color: #ff8484" class="info">
-  Sorry but we haven't solution try other graph
-</div>
-<div style="overflow-x:auto;" *ngIf="adjacencyMatrix.length">
-  <cuteness-graph
-    [adjacencyMatrix]="adjacencyMatrix"
-    [solution]="$safeNavigationMigration(solution?.vertices)"
-    [style.margin-bottom.rem]="1"
-  />
-  <cuteness-matrix
-    [adjacencyMatrix]="adjacencyMatrix"
-    [solution]="$safeNavigationMigration(solution?.vertices)"
-  />
-</div>
+@if (solution === null) {
+  <div style="color: #ff8484" class="info">Sorry but we haven't solution try other graph</div>
+}
+@if (adjacencyMatrix.length) {
+  <div style="overflow-x: auto">
+    <cuteness-graph
+      [adjacencyMatrix]="adjacencyMatrix"
+      [solution]="$safeNavigationMigration(solution?.vertices)"
+      [style.margin-bottom.rem]="1"
+    />
+    <cuteness-matrix [adjacencyMatrix]="adjacencyMatrix" [solution]="$safeNavigationMigration(solution?.vertices)" />
+  </div>
+}
 
 <ng-template #noGraph>
-  <div>
-    You can see graph if node count less or equal 20
-  </div>
+  <div>You can see graph if node count less or equal 20</div>
 </ng-template>

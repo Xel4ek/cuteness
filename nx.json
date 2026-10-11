@@ -15,23 +15,13 @@
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
-    "@nx/vitest:test": {
-      "cache": true,
-      "inputs": ["default", "^production"]
-    },
-    "test": [
-      {
-        "configurations": {
-          "ci": {
-            "ci": true,
-            "coverage": true
-          }
-        },
-        "options": {
-          "passWithNoTests": true
+    "test": {
+      "configurations": {
+        "ci": {
+          "coverage": true
         }
       }
-    ]
+    }
   },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
@@ -39,7 +29,7 @@
       "default",
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
       "!{projectRoot}/tsconfig.spec.json",
-      "!{projectRoot}/jest.config.[jt]s",
+      "!{projectRoot}/vitest.config.mts",
       "!{projectRoot}/eslint.config.mjs",
       "!{projectRoot}/src/test-setup.[jt]s"
     ],
@@ -49,12 +39,12 @@
     "@nx/angular:application": {
       "style": "scss",
       "linter": "eslint",
-      "unitTestRunner": "jest",
+      "unitTestRunner": "vitest-analog",
       "e2eTestRunner": "cypress"
     },
     "@nx/angular:library": {
       "linter": "eslint",
-      "unitTestRunner": "jest"
+      "unitTestRunner": "vitest-analog"
     },
     "@nx/angular:component": {
       "style": "scss",
@@ -123,6 +113,14 @@
       "plugin": "@nx/eslint/plugin",
       "options": {
         "targetName": "lint"
+      }
+    },
+    {
+      "plugin": "@nx/vitest",
+      "include": ["apps/**", "libs/**"],
+      "options": {
+        "testTargetName": "test",
+        "testMode": "run"
       }
     }
   ]

@@ -3,7 +3,6 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import js from '@eslint/js';
 import nx from '@nx/eslint-plugin';
-import globals from 'globals';
 const compat = new FlatCompat({
   baseDirectory: dirname(fileURLToPath(import.meta.url)),
   recommendedConfig: js.configs.recommended,
@@ -11,7 +10,6 @@ const compat = new FlatCompat({
 
 export default [
   ...nx.configs['flat/base'],
-  { languageOptions: { globals: { ...globals.jest } } },
   ...compat
     .config({
       extends: ['prettier'],

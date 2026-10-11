@@ -3,9 +3,9 @@ import { Comparable } from './comparable';
 class Node<T extends Comparable> implements Comparable {
   public left: Node<T> | null = null;
   public right: Node<T> | null = null;
-  public npl =  0;
+  public npl = 0;
 
-  constructor(public readonly value:T) {}
+  constructor(public readonly value: T) {}
 
   public compareTo(other: Node<T>): number {
     return this.value.compareTo(other.value);

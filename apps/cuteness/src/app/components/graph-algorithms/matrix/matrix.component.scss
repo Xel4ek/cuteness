@@ -9,8 +9,8 @@
 }
 .copy-button {
   position: absolute;
-  top: .3rem;
-  right: .3rem;
+  top: 0.3rem;
+  right: 0.3rem;
 }
 
 .table-content {
@@ -35,7 +35,7 @@ td.cell {
 }
 
 .infinity {
-  opacity: .5;
+  opacity: 0.5;
   display: inline-block;
   transform: translateY(2px);
 }
@@ -43,4 +43,3 @@ td.cell {
 .used {
   background-color: rgba(125, 204, 48, 0.5);
 }
-

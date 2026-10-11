@@ -1,24 +1,24 @@
-/// <reference types='vitest' />
-import { defineConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'vitest/config';
 import angular from '@analogjs/vite-plugin-angular';
-import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
-import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
 
 export default defineConfig(() => ({
-  root: import.meta.dirname,
+  root: fileURLToPath(new URL('.', import.meta.url)),
   cacheDir: '../../node_modules/.vite/apps/cuteness',
-  plugins: [angular(), nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
-  // Uncomment this if you are using workers.
-  // worker: {
-  //   plugins: () => [ nxViteTsPaths() ],
-  // },
+  resolve: { tsconfigPaths: true },
+  plugins: [angular({ tsconfig: 'tsconfig.spec.json' })],
   test: {
     name: 'cuteness',
     watch: false,
-    globals: true,
     environment: 'jsdom',
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     setupFiles: ['src/test-setup.ts'],
+    typecheck: {
+      enabled: true,
+      tsconfig: 'tsconfig.spec.json',
+      include: ['src/**/*.{test,spec}.ts'],
+      ignoreSourceErrors: false,
+    },
     reporters: ['default'],
     coverage: {
       reportsDirectory: '../../coverage/apps/cuteness',

@@ -48,10 +48,7 @@ export class GraphHelper {
     return false;
   }
 
-  public static generateDirectedAdjacencyMatrix(
-    vertices: number,
-    fillPercentage: number,
-  ): number[][] {
+  public static generateDirectedAdjacencyMatrix(vertices: number, fillPercentage: number): number[][] {
     if (fillPercentage < 0 || fillPercentage > 1) {
       throw new Error('Fill percentage must be between 0 and 1.');
     }

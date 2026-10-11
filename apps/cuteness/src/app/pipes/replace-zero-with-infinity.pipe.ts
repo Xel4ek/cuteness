@@ -6,6 +6,6 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class ReplaceZeroWithInfinityPipe implements PipeTransform {
   public transform(value: string | null): string {
-    return value === '0' ? '∞' : value ?? '';
+    return value === '0' ? '∞' : (value ?? '');
   }
 }

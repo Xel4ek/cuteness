@@ -1,21 +1,17 @@
-import { AfterViewInit, Directive, ElementRef, Inject } from '@angular/core';
+import { AfterViewInit, Directive, ElementRef, inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 
 @Directive({
   selector: '[cutenessFullScreen]',
-  standalone: true
+  standalone: true,
 })
 export class FullScreenDirective implements AfterViewInit {
-
-  constructor(
-    private readonly elementRef: ElementRef,
-    @Inject(DOCUMENT)
-    private readonly document: Document
-  ) { }
+  private readonly elementRef = inject(ElementRef);
+  private readonly document = inject<Document>(DOCUMENT);
 
   public ngAfterViewInit(): void {
     const height = Math.trunc(this.document.body.clientHeight);
     this.elementRef.nativeElement.width = this.document.body.clientWidth;
-    this.elementRef.nativeElement.height = height - (height % 2 + 1) - 64;
+    this.elementRef.nativeElement.height = height - ((height % 2) + 1) - 64;
   }
 }

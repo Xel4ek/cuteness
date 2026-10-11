@@ -1,9 +1,12 @@
-import { AfterViewInit, Directive, ElementRef, HostListener, output } from '@angular/core';
+import { AfterViewInit, Directive, ElementRef, HostListener, output, inject } from '@angular/core';
+import { getCanvasCoordinates } from '../../canvas-coordinates';
 
 @Directive({
   selector: '[cutenessSelectArea]',
 })
 export class SelectAreaDirective implements AfterViewInit {
+  private readonly elementElementRef = inject<ElementRef<HTMLCanvasElement>>(ElementRef);
+
   private startEvent: MouseEvent | TouchEvent | null = null;
   private controlContext: CanvasRenderingContext2D | null = null;
   private controlCanvasElement!: HTMLCanvasElement;
@@ -12,11 +15,7 @@ export class SelectAreaDirective implements AfterViewInit {
   public selectCoordinates = output<{
     startEvent: MouseEvent | TouchEvent;
     stopEvent: MouseEvent | TouchEvent;
-  }>()
-
-  constructor(
-    private readonly elementElementRef: ElementRef<HTMLCanvasElement>
-  ) {}
+  }>();
 
   public ngAfterViewInit(): void {
     this.controlCanvasElement = this.elementElementRef.nativeElement;
@@ -26,7 +25,7 @@ export class SelectAreaDirective implements AfterViewInit {
   @HostListener('touchstart', ['$event'])
   @HostListener('mousedown', ['$event'])
   protected start(event: MouseEvent | TouchEvent) {
-    if ("button" in event && event.button === 0) {
+    if ('button' in event ? event.button === 0 : event.touches.length === 1) {
       this.startEvent = event;
     }
   }
@@ -35,21 +34,18 @@ export class SelectAreaDirective implements AfterViewInit {
   @HostListener('mousemove', ['$event'])
   protected move(event: MouseEvent | TouchEvent) {
     if (this.startEvent) {
-      this.controlContext?.clearRect(
-        0,
-        0,
-        this.controlCanvasElement.width,
-        this.controlCanvasElement.height,
-      );
+      this.controlContext?.clearRect(0, 0, this.controlCanvasElement.width, this.controlCanvasElement.height);
 
-      // @ts-ignore
-      const { offsetX, offsetY } = this.startEvent;
+      const start = getCanvasCoordinates(this.startEvent, this.controlCanvasElement);
+      const current = getCanvasCoordinates(event, this.controlCanvasElement);
+      if (!start || !current) {
+        return;
+      }
 
-      // @ts-ignore
-      const width = event.offsetX - offsetX;
+      const { offsetX, offsetY } = start;
+      const width = current.offsetX - offsetX;
       const height =
-        // @ts-ignore
-        ((Math.sign(width * (event.offsetY - offsetY)) * width) / this.controlCanvasElement.width) *
+        ((Math.sign(width * (current.offsetY - offsetY)) * width) / this.controlCanvasElement.width) *
         this.controlCanvasElement.height;
       this.controlContext?.strokeRect(offsetX, offsetY, width, height);
     }
@@ -62,16 +58,10 @@ export class SelectAreaDirective implements AfterViewInit {
       this.selectCoordinates.emit({
         startEvent: this.startEvent,
         stopEvent: event,
-      })
-
+      });
     }
 
-    this.controlContext?.clearRect(
-      0,
-      0,
-      this.controlCanvasElement.width,
-      this.controlCanvasElement.height,
-    );
+    this.controlContext?.clearRect(0, 0, this.controlCanvasElement.width, this.controlCanvasElement.height);
     this.startEvent = null;
   }
 
@@ -86,6 +76,4 @@ export class SelectAreaDirective implements AfterViewInit {
     //   this.render();
     // }
   }
-
-
 }

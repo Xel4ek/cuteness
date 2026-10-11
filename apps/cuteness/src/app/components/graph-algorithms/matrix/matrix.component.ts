@@ -1,16 +1,16 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { DecimalPipe, NgForOf } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ReplaceZeroWithInfinityPipe } from '../../../pipes/replace-zero-with-infinity.pipe';
 
 @Component({
-    selector: 'cuteness-matrix[adjacencyMatrix]',
-    templateUrl: './matrix.component.html',
-    styleUrls: ['./matrix.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [MatTooltipModule, NgForOf, DecimalPipe, MatButtonModule, MatIconModule, ReplaceZeroWithInfinityPipe]
+  selector: 'cuteness-matrix[adjacencyMatrix]',
+  templateUrl: './matrix.component.html',
+  styleUrls: ['./matrix.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [MatTooltipModule, DecimalPipe, MatButtonModule, MatIconModule, ReplaceZeroWithInfinityPipe],
 })
 export class MatrixComponent {
   @Input()

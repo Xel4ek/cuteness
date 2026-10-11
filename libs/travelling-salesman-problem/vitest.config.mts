@@ -1,18 +1,23 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
-import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
-import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
 
 export default defineConfig(() => ({
-  root: import.meta.dirname,
+  root: fileURLToPath(new URL('.', import.meta.url)),
   cacheDir: '../../node_modules/.vite/libs/travelling-salesman-problem',
-  plugins: [nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
+  resolve: { tsconfigPaths: true },
   test: {
     name: 'travelling-salesman-problem',
     watch: false,
-    globals: true,
-    environment: 'jsdom',
+    environment: 'node',
+    passWithNoTests: true,
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],
+    typecheck: {
+      enabled: true,
+      tsconfig: 'tsconfig.spec.json',
+      include: ['src/**/*.{test,spec}.ts'],
+      ignoreSourceErrors: false,
+    },
     coverage: {
       reportsDirectory: '../../coverage/libs/travelling-salesman-problem',
       provider: 'v8' as const,

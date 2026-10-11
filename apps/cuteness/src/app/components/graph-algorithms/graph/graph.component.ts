@@ -8,7 +8,7 @@ import { GraphEdgeItemOption, GraphNodeItemOption } from 'echarts/types/src/char
   templateUrl: './graph.component.html',
   styleUrls: ['./graph.component.scss'],
   imports: [NgxEchartsModule],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     {
       provide: NGX_ECHARTS_CONFIG,

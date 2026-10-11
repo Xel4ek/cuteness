@@ -1,16 +1,10 @@
-<cuteness-scene-control
-  [actionList]="actionList"
-/>
+<cuteness-scene-control [actionList]="actionList" />
 <canvas
-  style="position: absolute; left: 0; top:0"
+  style="position: absolute; left: 0; top: 0"
   #control
   cutenessSelectArea
   (setDefault)="reset()"
   (selectCoordinates)="selectCoordinates($event)"
   cutenessFullScreen
 ></canvas>
-<canvas
-  cutenessFullScreen
-  #offscreenCanvas
-></canvas>
-
+<canvas cutenessFullScreen #offscreenCanvas></canvas>
