@@ -1,13 +1,17 @@
 import { AfterViewInit, Directive, ElementRef, HostListener, output, inject } from '@angular/core';
-import { CanvasCoordinates, CanvasTransform, getCanvasCoordinates } from '../../canvas-coordinates';
+import { CanvasCoordinates, CanvasTransform } from '../../canvas-coordinates';
 
 @Directive({
   selector: '[cutenessSelectArea]',
+  host: {
+    '[class.panning]': 'mouseGesture && !mouseGesture.select',
+    '[class.selecting]': 'mouseGesture?.select',
+  },
 })
 export class SelectAreaDirective implements AfterViewInit {
   private readonly elementElementRef = inject<ElementRef<HTMLCanvasElement>>(ElementRef);
 
-  private startEvent: MouseEvent | null = null;
+  protected mouseGesture?: { start: CanvasCoordinates; last: CanvasCoordinates; select: boolean };
   private touchState?: { center: CanvasCoordinates; distance: number; count: number };
   private tapStart?: { x: number; y: number; time: number };
   private lastTap?: { x: number; y: number; time: number };
@@ -17,8 +21,8 @@ export class SelectAreaDirective implements AfterViewInit {
   public setDefault = output<void>();
   public transformCoordinates = output<CanvasTransform>();
   public selectCoordinates = output<{
-    startEvent: MouseEvent | TouchEvent;
-    stopEvent: MouseEvent | TouchEvent;
+    startEvent: CanvasCoordinates;
+    stopEvent: CanvasCoordinates;
   }>();
 
   public ngAfterViewInit(): void {
@@ -28,49 +32,80 @@ export class SelectAreaDirective implements AfterViewInit {
 
   @HostListener('mousedown', ['$event'])
   protected start(event: MouseEvent) {
-    if (event.button === 0) {
-      this.startEvent = event;
+    if (event.button === 0 || event.button === 1) {
+      event.preventDefault();
+      const position = this.mouseCoordinates(event);
+      this.mouseGesture = { start: position, last: position, select: event.button === 0 && event.shiftKey };
     }
   }
 
-  @HostListener('mousemove', ['$event'])
+  @HostListener('document:mousemove', ['$event'])
   protected move(event: MouseEvent) {
-    if (this.startEvent) {
+    const gesture = this.mouseGesture;
+    if (!gesture) {
+      return;
+    }
+
+    const current = this.mouseCoordinates(event);
+    if (gesture.select) {
       this.controlContext?.clearRect(0, 0, this.controlCanvasElement.width, this.controlCanvasElement.height);
-
-      const start = getCanvasCoordinates(this.startEvent, this.controlCanvasElement);
-      const current = getCanvasCoordinates(event, this.controlCanvasElement);
-      if (!start || !current) {
-        return;
-      }
-
-      const { offsetX, offsetY } = start;
+      const { offsetX, offsetY } = gesture.start;
       const width = current.offsetX - offsetX;
       const height =
         ((Math.sign(width * (current.offsetY - offsetY)) * width) / this.controlCanvasElement.width) *
         this.controlCanvasElement.height;
       this.controlContext?.strokeRect(offsetX, offsetY, width, height);
+    } else {
+      this.transformCoordinates.emit({ from: gesture.last, to: current, scale: 1 });
     }
+    gesture.last = current;
   }
 
-  @HostListener('mouseup', ['$event'])
+  @HostListener('document:mouseup', ['$event'])
   protected stop(event: MouseEvent) {
-    if (this.startEvent && event.clientX !== this.startEvent.clientX) {
+    const gesture = this.mouseGesture;
+    if (!gesture) {
+      return;
+    }
+
+    const current = this.mouseCoordinates(event);
+    if (gesture.select && current.offsetX !== gesture.start.offsetX) {
       this.selectCoordinates.emit({
-        startEvent: this.startEvent,
-        stopEvent: event,
+        startEvent: gesture.start,
+        stopEvent: current,
       });
     }
 
     this.controlContext?.clearRect(0, 0, this.controlCanvasElement.width, this.controlCanvasElement.height);
-    this.startEvent = null;
+    this.mouseGesture = undefined;
+  }
+
+  @HostListener('wheel', ['$event'])
+  protected zoom(event: WheelEvent) {
+    if (!event.deltaY) {
+      return;
+    }
+
+    event.preventDefault();
+    const { height } = this.controlCanvasElement.getBoundingClientRect();
+    const unit =
+      event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? height : 1;
+    const delta = Math.max(-500, Math.min(500, event.deltaY * unit));
+    const point = this.mouseCoordinates(event);
+    this.transformCoordinates.emit({ from: point, to: point, scale: Math.exp(delta * 0.002) });
+  }
+
+  private mouseCoordinates(event: MouseEvent): CanvasCoordinates {
+    const { left, top } = this.controlCanvasElement.getBoundingClientRect();
+
+    return { offsetX: event.clientX - left, offsetY: event.clientY - top };
   }
 
   @HostListener('touchstart', ['$event'])
   @HostListener('touchend', ['$event'])
   protected touchChange(event: TouchEvent) {
     event.preventDefault();
-    this.startEvent = null;
+    this.mouseGesture = undefined;
     this.touchState = this.readTouches(event);
     if (event.type === 'touchstart') {
       this.tapStart =
@@ -132,11 +167,13 @@ export class SelectAreaDirective implements AfterViewInit {
   }
 
   @HostListener('touchcancel')
+  @HostListener('window:blur')
   protected touchCancel() {
     this.touchState = undefined;
-    this.startEvent = null;
+    this.mouseGesture = undefined;
     this.tapStart = undefined;
     this.lastTap = undefined;
+    this.controlContext?.clearRect(0, 0, this.controlCanvasElement.width, this.controlCanvasElement.height);
   }
 
   private readTouches(event: TouchEvent) {

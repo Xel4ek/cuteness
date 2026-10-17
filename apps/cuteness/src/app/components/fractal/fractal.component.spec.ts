@@ -26,9 +26,26 @@ describe('fractal navigation', () => {
     return message.coordinates;
   }
 
-  function mouse(type: string, x = 0, y = 0, button = 0) {
-    canvas.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button }));
+  function mouse(type: string, x = 0, y = 0, button = 0, shiftKey = false) {
+    canvas.dispatchEvent(
+      new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button, shiftKey }),
+    );
     fixture.detectChanges();
+  }
+
+  function wheel(deltaY: number, deltaMode = 0, x = 100, y = 150) {
+    const event = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      clientX: x,
+      clientY: y,
+      deltaY,
+      deltaMode,
+    });
+    canvas.dispatchEvent(event);
+    fixture.detectChanges();
+
+    return event;
   }
 
   function touch(type: string, points: [number, number][]) {
@@ -82,9 +99,9 @@ describe('fractal navigation', () => {
     }
   });
 
-  it('preserves desktop rectangle zoom and right-click reset', () => {
+  it('selects a zoom rectangle with Shift and preserves right-click reset', () => {
     const initial = coordinates();
-    mouse('mousedown', 100, 100);
+    mouse('mousedown', 100, 100, 0, true);
     mouse('mousemove', 300, 150);
     mouse('mouseup', 300, 150);
     expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(1.5);
@@ -98,11 +115,103 @@ describe('fractal navigation', () => {
     mouse('mousedown', 100, 100);
     mouse('mouseup', 100, 100);
     expect(coordinates()).toEqual(initial);
-    mouse('mousedown', 100, 100);
+    mouse('mousedown', 100, 100, 0, true);
     mouse('mouseup', 300, 150);
     expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(1.5);
     mouse('dblclick', 100, 100);
     expect(coordinates()).toEqual(initial);
+  });
+
+  it('zooms in and out with the wheel while keeping the point under the cursor fixed', () => {
+    const initial = coordinates();
+    const anchorX = initial.leftBound + (100 * 3) / 400;
+    const anchorY = initial.topBound + (150 * 3) / 400;
+    const event = wheel(-100);
+    const zoomed = coordinates();
+    const span = zoomed.rightBound - zoomed.leftBound;
+    expect(span).toBeLessThan(3);
+    expect(zoomed.leftBound + (100 * span) / 400).toBeCloseTo(anchorX, 10);
+    expect(zoomed.topBound + (150 * span) / 400).toBeCloseTo(anchorY, 10);
+    expect(event.defaultPrevented).toBe(true);
+    wheel(100);
+    expect(coordinates().leftBound).toBeCloseTo(initial.leftBound, 10);
+    expect(coordinates().rightBound).toBeCloseTo(initial.rightBound, 10);
+    expect(coordinates().topBound).toBeCloseTo(initial.topBound, 10);
+  });
+
+  it('normalizes line and page wheel units and keeps large wheel events finite', () => {
+    wheel(48);
+    const pixels = coordinates();
+    mouse('contextmenu', 0, 0, 2);
+    wheel(3, 1);
+    expect(coordinates()).toEqual(pixels);
+    mouse('contextmenu', 0, 0, 2);
+    wheel(300);
+    const page = coordinates();
+    mouse('contextmenu', 0, 0, 2);
+    wheel(1, 2);
+    expect(coordinates()).toEqual(page);
+    wheel(1000000);
+    expect(Number.isFinite(coordinates().leftBound)).toBe(true);
+    expect(coordinates().rightBound).toBeGreaterThan(coordinates().leftBound);
+  });
+
+  it('limits wheel zoom-out to 0.5x while preserving the anchor and allowing zoom-in again', () => {
+    const initial = coordinates();
+    const anchorX = initial.leftBound + (100 * 3) / 400;
+    const anchorY = initial.topBound + (150 * 3) / 400;
+    wheel(10000);
+    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(6);
+    expect(coordinates().leftBound + (100 * 6) / 400).toBeCloseTo(anchorX);
+    expect(coordinates().topBound + (150 * 6) / 400).toBeCloseTo(anchorY);
+    const minimum = coordinates();
+    wheel(10000);
+    expect(coordinates()).toEqual(minimum);
+    wheel(-100);
+    expect(coordinates().rightBound - coordinates().leftBound).toBeLessThan(6);
+  });
+
+  it('applies the same 0.5x zoom-out limit to pinch gestures', () => {
+    touch('touchstart', [
+      [50, 100],
+      [250, 100],
+    ]);
+    touch('touchmove', [
+      [140, 100],
+      [160, 100],
+    ]);
+    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(6);
+  });
+
+  it('pans with the mouse by default without changing zoom or selecting a rectangle', () => {
+    const initial = coordinates();
+    mouse('mousedown', 100, 100);
+    mouse('mousemove', 120, 130);
+    expect(coordinates().leftBound).toBeCloseTo(initial.leftBound - (20 * 3) / 400);
+    expect(coordinates().topBound).toBeCloseTo(initial.topBound - (30 * 3) / 400);
+    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(3);
+    mouse('mousemove', 140, 140);
+    mouse('mouseup', 140, 140);
+    const panned = coordinates();
+    expect(panned.leftBound).toBeCloseTo(initial.leftBound - (40 * 3) / 400);
+    expect(panned.rightBound - panned.leftBound).toBeCloseTo(3);
+    mouse('mousemove', 200, 200);
+    expect(coordinates()).toEqual(panned);
+  });
+
+  it('ends a mouse drag outside the canvas and cancels it when the window loses focus', () => {
+    mouse('mousedown', 100, 100);
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 450, clientY: 140 }));
+    fixture.detectChanges();
+    const panned = coordinates();
+    expect(panned.leftBound).toBeCloseTo(-2 - (350 * 3) / 400);
+    document.dispatchEvent(new MouseEvent('mouseup', { clientX: 450, clientY: 140 }));
+    mouse('mousemove', 200, 200);
+    expect(coordinates()).toEqual(panned);
+    mouse('mousedown', 100, 100);
+    window.dispatchEvent(new Event('blur'));
+    mouse('mousemove', 200, 200);
+    expect(coordinates()).toEqual(panned);
   });
 
   it('resets on a double tap while a single tap keeps the current zoom', () => {

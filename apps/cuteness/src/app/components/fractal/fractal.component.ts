@@ -18,7 +18,7 @@ import { MandelbrotWorkerCommand } from './worker/mandelbrot-worker-command';
 import { SceneControlComponent } from '../scena-control/scene-control.component';
 import { ControlAction } from '../scena-control/control-action';
 import { SelectAreaDirective } from './directives/select-area/select-area.directive';
-import { CanvasTransform, getCanvasCoordinates } from './canvas-coordinates';
+import { CanvasCoordinates, CanvasTransform, getCanvasCoordinates } from './canvas-coordinates';
 
 @Component({
   selector: 'cuteness-fractal',
@@ -39,6 +39,7 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
   private leftBound = -2.0;
   private rightBound = 1.0;
   private topBound = 1.0;
+  private readonly minimumZoom = 0.5;
 
   @ViewChild('control', { static: true })
   private readonly controlCanvasElement!: ElementRef<HTMLCanvasElement>;
@@ -83,8 +84,8 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
     startEvent,
     stopEvent,
   }: {
-    startEvent: MouseEvent | TouchEvent;
-    stopEvent: MouseEvent | TouchEvent;
+    startEvent: CanvasCoordinates;
+    stopEvent: CanvasCoordinates;
   }) {
     const canvas = this.controlCanvasElement.nativeElement;
     const start = getCanvasCoordinates(startEvent, canvas);
@@ -118,9 +119,10 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
     const width = this.controlCanvasElement.nativeElement.getBoundingClientRect().width;
     const span = this.rightBound - this.leftBound;
     const perPixel = span / width;
-    const nextPerPixel = perPixel * scale;
+    const nextSpan = Math.min(span * scale, 3 / this.minimumZoom);
+    const nextPerPixel = nextSpan / width;
     const leftBound = this.leftBound + from.offsetX * perPixel - to.offsetX * nextPerPixel;
-    const rightBound = leftBound + span * scale;
+    const rightBound = leftBound + nextSpan;
     const topBound = this.topBound + from.offsetY * perPixel - to.offsetY * nextPerPixel;
     if (
       !Number.isFinite(leftBound) ||

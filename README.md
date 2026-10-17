@@ -37,7 +37,7 @@ bun start
 
 Open http://localhost:4200/. The app reloads when source files change.
 
-On the fractal screen, drag a rectangle with the mouse to zoom in; right-click or double-click to reset the view. On touch screens, pinch to zoom in or out, drag with one finger to pan, and double-tap to reset. A click or single tap keeps the current zoom.
+On the fractal screen, use the mouse wheel to zoom in or out around the cursor, drag to pan, and Shift-drag a rectangle to zoom into an area. The middle mouse button also pans. Right-click or double-click resets the view. On touch screens, pinch to zoom in or out, drag with one finger to pan, and double-tap to reset. A click or single tap keeps the current zoom. Wheel and pinch zoom-out stop at 0.5× the initial scale.
 
 ## Checks
 
