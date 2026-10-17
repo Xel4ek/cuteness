@@ -8,6 +8,7 @@ export class GraphHelper {
 
     for (let i = 0; i < vertices; i++) {
       matrix[i] = [];
+
       for (let j = 0; j < vertices; j++) {
         matrix[i].push(0);
       }
@@ -57,6 +58,7 @@ export class GraphHelper {
 
     for (let i = 0; i < vertices; i++) {
       matrix[i] = [];
+
       for (let j = 0; j < vertices; j++) {
         matrix[i].push(0); // Заполнение матрицы нулями
       }

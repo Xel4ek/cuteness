@@ -1,13 +1,15 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatButtonModule } from '@angular/material/button';
-import { Route } from '@angular/router';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { GraphHelper, TsmResult } from '@cuteness/travelling-salesman-problem';
-import { animationFrameScheduler, interval, map, Observable, takeWhile } from 'rxjs';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { Route } from '@angular/router';
+import { Observable, animationFrameScheduler, interval, map, takeWhile } from 'rxjs';
+
+import { GraphHelper, TsmResult } from '@cuteness/travelling-salesman-problem';
+
 import { GraphComponent } from './graph/graph.component';
 import { MatrixPreviewComponent } from './matrix-preview/matrix-preview.component';
 
@@ -26,19 +28,9 @@ interface RunResult {
 
 @Component({
   selector: 'cuteness-graph-algorithms',
-  imports: [
-    CommonModule,
-    MatButtonModule,
-    FormsModule,
-    MatProgressSpinnerModule,
-    MatIconModule,
-    MatTooltipModule,
-    GraphComponent,
-    MatrixPreviewComponent,
-  ],
   templateUrl: './graph-algorithms.component.html',
   styleUrls: ['./graph-algorithms.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CommonModule, MatButtonModule, FormsModule, MatProgressSpinnerModule, MatIconModule, MatTooltipModule, GraphComponent, MatrixPreviewComponent],
 })
 export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
@@ -47,6 +39,7 @@ export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
   protected solution?: TsmResult | null;
   protected size = 30;
   protected chance = 0.5;
+
   protected readonly methods: Method[] = [
     {
       title: 'Little WASM',
@@ -70,12 +63,14 @@ export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
       counter: 'candidates',
     },
   ];
+
   protected results: RunResult[] = [];
   protected selectedRun?: RunResult;
   protected statusMessage?: string;
   protected processing = false;
   protected pendingMethod?: Method;
-  protected elapsedTime$: Observable<string> = interval(213, animationFrameScheduler).pipe(
+
+  protected readonly elapsedTime$: Observable<string> = interval(213, animationFrameScheduler).pipe(
     map(() => this.formatTime(performance.now() - this.startTime)),
     takeWhile(() => this.processing),
   );
@@ -93,27 +88,23 @@ export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
   }
 
   protected generateMatrix(): void {
-    if (this.processing) {
-      return;
+    if (!this.processing) {
+      this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
+      this.solution = undefined;
+      this.results = [];
+      this.selectedRun = undefined;
+      this.statusMessage = undefined;
     }
-
-    this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
-    this.solution = undefined;
-    this.results = [];
-    this.selectedRun = undefined;
-    this.statusMessage = undefined;
   }
 
   protected solve(method: Method): void {
-    if (this.processing || !this.adjacencyMatrix.length) {
-      return;
+    if (!this.processing && this.adjacencyMatrix.length) {
+      this.processing = true;
+      this.pendingMethod = method;
+      this.statusMessage = undefined;
+      this.startTime = performance.now();
+      this.worker.postMessage({ adjacencyMatrix: this.adjacencyMatrix, method: method.method });
     }
-
-    this.processing = true;
-    this.pendingMethod = method;
-    this.statusMessage = undefined;
-    this.startTime = performance.now();
-    this.worker.postMessage({ adjacencyMatrix: this.adjacencyMatrix, method: method.method });
   }
 
   protected selectRun(run: RunResult): void {
@@ -127,15 +118,14 @@ export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
   }
 
   protected chooseMethod(method: Method): void {
-    if (this.processing) {
-      return;
-    }
+    if (!this.processing) {
+      const run = this.resultFor(method);
 
-    const run = this.resultFor(method);
-    if (run) {
-      this.selectRun(run);
-    } else {
-      this.solve(method);
+      if (run) {
+        this.selectRun(run);
+      } else {
+        this.solve(method);
+      }
     }
   }
 
@@ -154,30 +144,26 @@ export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
   private createWorker(): Worker {
     const worker = new Worker(new URL('./tsp.worker.ts', import.meta.url));
     worker.onmessage = ({ data }: MessageEvent<{ solution: TsmResult | null; timeElapsed: number }>) => {
-      if (this.worker !== worker || !this.pendingMethod) {
-        return;
+      if (this.worker === worker && this.pendingMethod) {
+        const run: RunResult = {
+          id: this.nextRunId++,
+          method: this.pendingMethod,
+          solution: data.solution,
+          timeElapsed: data.timeElapsed,
+        };
+        this.results = [...this.results.filter((result) => result.method.method !== run.method.method), run];
+        this.selectRun(run);
+        this.processing = false;
+        this.pendingMethod = undefined;
+        this.changeDetectorRef.markForCheck();
       }
-
-      const run: RunResult = {
-        id: this.nextRunId++,
-        method: this.pendingMethod,
-        solution: data.solution,
-        timeElapsed: data.timeElapsed,
-      };
-      this.results = [...this.results.filter((result) => result.method.method !== run.method.method), run];
-      this.selectRun(run);
-      this.processing = false;
-      this.pendingMethod = undefined;
-      this.changeDetectorRef.markForCheck();
     };
     worker.onerror = () => {
-      if (this.worker !== worker) {
-        return;
+      if (this.worker === worker) {
+        this.stop();
+        this.statusMessage = 'Calculation failed. Try again.';
+        this.changeDetectorRef.markForCheck();
       }
-
-      this.stop();
-      this.statusMessage = 'Calculation failed. Try again.';
-      this.changeDetectorRef.markForCheck();
     };
 
     return worker;

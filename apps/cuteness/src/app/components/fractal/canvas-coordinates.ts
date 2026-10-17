@@ -16,15 +16,13 @@ type CanvasInputEvent =
       changedTouches: ArrayLike<{ clientX: number; clientY: number }>;
     };
 
-export function getCanvasCoordinates(
-  event: CanvasInputEvent,
-  canvas: { getBoundingClientRect(): { left: number; top: number } },
-): CanvasCoordinates | null {
+export function getCanvasCoordinates(event: CanvasInputEvent, canvas: { getBoundingClientRect(): { left: number; top: number } }): CanvasCoordinates | null {
   if ('offsetX' in event) {
     return { offsetX: event.offsetX, offsetY: event.offsetY };
   }
 
   const touch = event.touches[0] ?? event.changedTouches[0];
+
   if (!touch) {
     return null;
   }

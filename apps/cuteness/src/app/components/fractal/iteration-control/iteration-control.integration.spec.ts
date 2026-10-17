@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter, withHashLocation } from '@angular/router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import FractalComponent from '../fractal.component';
 import { MandelbrotWorkerCommand } from '../worker/mandelbrot-worker-command';
-import { WorkerEvent } from '../worker/worker-event';
 import { MandelbrotWorkerResult } from '../worker/mandelbrot-worker-result';
-import { provideRouter, withHashLocation } from '@angular/router';
+import { WorkerEvent } from '../worker/worker-event';
 
 describe('fractal iteration settings', () => {
   afterEach(() => {
@@ -54,7 +55,7 @@ describe('fractal iteration settings', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     const messages = () => postMessage.mock.calls.map(([message]) => message);
-    expect(messages()[0].type).toBe(WorkerEvent.init);
+    expect(messages()[0].type).toBe(WorkerEvent.Init);
     expect(messages()).toHaveLength(1);
     expect(messages()[0].maxIteration).toBe(2000);
     worker.onmessage?.(
@@ -79,7 +80,7 @@ describe('fractal iteration settings', () => {
     input.dispatchEvent(new FocusEvent('blur'));
     fixture.detectChanges();
     await fixture.whenStable();
-    expect(messages()).toEqual([expect.objectContaining({ type: WorkerEvent.render, maxIteration: 3200 })]);
+    expect(messages()).toEqual([expect.objectContaining({ type: WorkerEvent.Render, maxIteration: 3200 })]);
 
     const canvas: HTMLCanvasElement = fixture.nativeElement.querySelector('canvas[cutenessSelectArea]');
     canvas.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));

@@ -1,30 +1,28 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
-
+import { Component } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 
 @Component({
   selector: 'cuteness-opfs',
-  imports: [MatButton],
   templateUrl: './opfs.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './opfs.component.scss',
+  imports: [MatButton],
 })
 export class OpfsComponent {
   protected async init() {
-    const root = await navigator.storage.getDirectory().then((root) => {
-      console.warn('root', root);
+    const root = await navigator.storage.getDirectory().then((rootHandle) => {
+      console.warn('root', rootHandle);
 
-      return root;
+      return rootHandle;
     });
 
     const directory = await root
       .getDirectoryHandle('my', {
         create: true,
       })
-      .then((directory) => {
-        console.warn('directory', directory);
+      .then((directoryHandle) => {
+        console.warn('directory', directoryHandle);
 
-        return directory;
+        return directoryHandle;
       });
 
     await directory.getFileHandle('pop', {
@@ -35,16 +33,16 @@ export class OpfsComponent {
       .getFileHandle('wow_2', {
         create: true,
       })
-      .then((file) => {
-        console.warn('file', file);
+      .then((fileHandle) => {
+        console.warn('file', fileHandle);
 
-        return file;
+        return fileHandle;
       });
 
-    const stream = await file.createWritable({ keepExistingData: true }).then((stream) => {
-      console.warn('stream', stream);
+    const stream = await file.createWritable({ keepExistingData: true }).then((writableStream) => {
+      console.warn('stream', writableStream);
 
-      return stream;
+      return writableStream;
     });
 
     await stream.write({
@@ -57,10 +55,10 @@ export class OpfsComponent {
 
     await file
       .getFile()
-      .then((file) => {
-        console.warn('read', file);
+      .then((blob) => {
+        console.warn('read', blob);
 
-        return file.text();
+        return blob.text();
       })
       .then((text) => console.warn('text', text));
 

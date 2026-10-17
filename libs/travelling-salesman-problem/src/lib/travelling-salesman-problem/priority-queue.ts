@@ -38,6 +38,7 @@ export class PriorityQueue<T extends Comparable> {
     if (!lhs) {
       return rhs;
     }
+
     if (!rhs) {
       return lhs;
     }

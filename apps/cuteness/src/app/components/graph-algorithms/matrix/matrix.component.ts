@@ -1,15 +1,15 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { DecimalPipe } from '@angular/common';
+import { Component, Input } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
 import { ReplaceZeroWithInfinityPipe } from '../../../pipes/replace-zero-with-infinity.pipe';
 
 @Component({
   selector: 'cuteness-matrix[adjacencyMatrix]',
   templateUrl: './matrix.component.html',
   styleUrls: ['./matrix.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatTooltipModule, DecimalPipe, MatButtonModule, MatIconModule, ReplaceZeroWithInfinityPipe],
 })
 export class MatrixComponent {
@@ -26,6 +26,7 @@ export class MatrixComponent {
 
   protected inSolution(row: number, col: number): boolean {
     const index = this.solution?.findIndex((i) => i === row) ?? -1;
+
     if (index >= 0) {
       return this.solution?.[index + 1] === col;
     }

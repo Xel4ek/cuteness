@@ -1,4 +1,5 @@
-import { AfterViewInit, Directive, ElementRef, HostListener, output, inject } from '@angular/core';
+import { AfterViewInit, Directive, ElementRef, HostListener, inject, output } from '@angular/core';
+
 import { CanvasCoordinates, CanvasTransform } from '../../canvas-coordinates';
 
 @Directive({
@@ -42,33 +43,36 @@ export class SelectAreaDirective implements AfterViewInit {
   @HostListener('document:mousemove', ['$event'])
   protected move(event: MouseEvent) {
     const gesture = this.mouseGesture;
+
     if (!gesture) {
       return;
     }
 
     const current = this.mouseCoordinates(event);
+
     if (gesture.select) {
       this.controlContext?.clearRect(0, 0, this.controlCanvasElement.width, this.controlCanvasElement.height);
       const { offsetX, offsetY } = gesture.start;
       const width = current.offsetX - offsetX;
-      const height =
-        ((Math.sign(width * (current.offsetY - offsetY)) * width) / this.controlCanvasElement.width) *
-        this.controlCanvasElement.height;
+      const height = ((Math.sign(width * (current.offsetY - offsetY)) * width) / this.controlCanvasElement.width) * this.controlCanvasElement.height;
       this.controlContext?.strokeRect(offsetX, offsetY, width, height);
     } else {
       this.transformCoordinates.emit({ from: gesture.last, to: current, scale: 1 });
     }
+
     gesture.last = current;
   }
 
   @HostListener('document:mouseup', ['$event'])
   protected stop(event: MouseEvent) {
     const gesture = this.mouseGesture;
+
     if (!gesture) {
       return;
     }
 
     const current = this.mouseCoordinates(event);
+
     if (gesture.select && current.offsetX !== gesture.start.offsetX) {
       this.selectCoordinates.emit({
         startEvent: gesture.start,
@@ -88,8 +92,7 @@ export class SelectAreaDirective implements AfterViewInit {
 
     event.preventDefault();
     const { height } = this.controlCanvasElement.getBoundingClientRect();
-    const unit =
-      event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? height : 1;
+    const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? height : 1;
     const delta = Math.max(-500, Math.min(500, event.deltaY * unit));
     const point = this.mouseCoordinates(event);
     this.transformCoordinates.emit({ from: point, to: point, scale: Math.exp(delta * 0.002) });
@@ -107,11 +110,10 @@ export class SelectAreaDirective implements AfterViewInit {
     event.preventDefault();
     this.mouseGesture = undefined;
     this.touchState = this.readTouches(event);
+
     if (event.type === 'touchstart') {
-      this.tapStart =
-        this.touchState?.count === 1
-          ? { x: this.touchState.center.offsetX, y: this.touchState.center.offsetY, time: performance.now() }
-          : undefined;
+      this.tapStart = this.touchState?.count === 1 ? { x: this.touchState.center.offsetX, y: this.touchState.center.offsetY, time: performance.now() } : undefined;
+
       if (!this.tapStart) {
         this.lastTap = undefined;
       }
@@ -119,12 +121,9 @@ export class SelectAreaDirective implements AfterViewInit {
       if (!event.touches.length && this.tapStart) {
         const now = performance.now();
         const tap = this.tapStart;
+
         if (now - tap.time <= 300) {
-          if (
-            this.lastTap &&
-            now - this.lastTap.time <= 300 &&
-            Math.hypot(tap.x - this.lastTap.x, tap.y - this.lastTap.y) <= 24
-          ) {
+          if (this.lastTap && now - this.lastTap.time <= 300 && Math.hypot(tap.x - this.lastTap.x, tap.y - this.lastTap.y) <= 24) {
             this.reset(event);
           } else {
             this.lastTap = { ...tap, time: now };
@@ -133,8 +132,10 @@ export class SelectAreaDirective implements AfterViewInit {
           this.lastTap = undefined;
         }
       }
+
       this.tapStart = undefined;
     }
+
     this.controlContext?.clearRect(0, 0, this.controlCanvasElement.width, this.controlCanvasElement.height);
   }
 
@@ -144,13 +145,12 @@ export class SelectAreaDirective implements AfterViewInit {
     const previous = this.touchState;
     const current = this.readTouches(event);
     this.touchState = current;
-    if (
-      this.tapStart &&
-      (!current || Math.hypot(current.center.offsetX - this.tapStart.x, current.center.offsetY - this.tapStart.y) > 10)
-    ) {
+
+    if (this.tapStart && (!current || Math.hypot(current.center.offsetX - this.tapStart.x, current.center.offsetY - this.tapStart.y) > 10)) {
       this.tapStart = undefined;
       this.lastTap = undefined;
     }
+
     if (!previous || !current || previous.count !== current.count) {
       return;
     }

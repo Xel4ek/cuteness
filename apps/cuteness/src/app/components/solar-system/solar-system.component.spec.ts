@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import SolarSystemComponent from './solar-system.component';
 
 describe('solar-system worker lifecycle', () => {

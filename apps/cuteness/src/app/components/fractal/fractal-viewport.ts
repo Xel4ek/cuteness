@@ -15,6 +15,7 @@ export interface FractalPoint {
 
 export function fixedFromDecimal(value: string, precision: number): bigint {
   const match = /^([+-]?)(\d+)(?:\.(\d*))?(?:e([+-]?\d+))?$/i.exec(value);
+
   if (!match) {
     throw new Error('Invalid decimal coordinate');
   }
@@ -22,10 +23,7 @@ export function fixedFromDecimal(value: string, precision: number): bigint {
   const fraction = match[3] ?? '';
   const magnitude = BigInt(match[2] + fraction);
   const exponent = Number(match[4] ?? 0) - fraction.length;
-  const scaled =
-    exponent >= 0
-      ? (magnitude * 10n ** BigInt(exponent)) << BigInt(precision)
-      : (magnitude << BigInt(precision)) / 10n ** BigInt(-exponent);
+  const scaled = exponent >= 0 ? (magnitude * 10n ** BigInt(exponent)) << BigInt(precision) : (magnitude << BigInt(precision)) / 10n ** BigInt(-exponent);
 
   return match[1] === '-' ? -scaled : scaled;
 }
@@ -34,16 +32,18 @@ export function fixedToNumber(value: bigint, precision: number): number {
   const magnitude = value < 0n ? -value : value;
   const shift = Math.max(0, magnitude.toString(2).length - 53);
   let mantissa = magnitude >> BigInt(shift);
+
   if (shift) {
     const remainder = magnitude - (mantissa << BigInt(shift));
     const half = 1n << BigInt(shift - 1);
+
     if (remainder > half || (remainder === half && mantissa & 1n)) {
       mantissa++;
     }
   }
+
   const exponent = shift - precision;
-  const result =
-    exponent < -1022 ? Number(mantissa) * 2 ** -1022 * 2 ** (exponent + 1022) : Number(mantissa) * 2 ** exponent;
+  const result = exponent < -1022 ? Number(mantissa) * 2 ** -1022 * 2 ** (exponent + 1022) : Number(mantissa) * 2 ** exponent;
 
   return value < 0n ? -result : result;
 }
@@ -51,17 +51,14 @@ export function fixedToNumber(value: bigint, precision: number): number {
 /** A bounded mantissa and a separate exponent; neither tiny deltas nor huge BigInts pass through Number. */
 export function scaledParts(re: bigint, im: bigint, precision: number): [number, number, number] {
   const largest = [re < 0n ? -re : re, im < 0n ? -im : im].reduce((a, b) => (a > b ? a : b));
+
   if (!largest) {
     return [0, 0, 0];
   }
 
   const exponent = largest.toString(2).length - 1 - precision;
 
-  return [
-    Math.fround(fixedToNumber(re, precision + exponent)),
-    Math.fround(fixedToNumber(im, precision + exponent)),
-    exponent,
-  ];
+  return [Math.fround(fixedToNumber(re, precision + exponent)), Math.fround(fixedToNumber(im, precision + exponent)), exponent];
 }
 
 function fractionOf(value: bigint, numerator: number, denominator: number): bigint {
@@ -128,40 +125,34 @@ export class FractalViewport {
   }
 
   public transform({ from, to, scale }: CanvasTransform, width: number, height: number): void {
-    if (!(width > 0 && height > 0 && scale > 0 && Number.isFinite(scale))) {
-      return;
-    }
+    if (width > 0 && height > 0 && scale > 0 && Number.isFinite(scale)) {
+      const { span, precision, centerRe, centerIm } = this.view;
+      const requested = (span * fixedFromDecimal(scale.toString(), 64)) >> 64n;
+      const maximum = 6n << BigInt(precision); // Width 3 is 1x; minimum zoom is 0.5x.
+      const nextSpan = requested > maximum ? maximum : requested;
 
-    const { span, precision, centerRe, centerIm } = this.view;
-    const requested = (span * fixedFromDecimal(scale.toString(), 64)) >> 64n;
-    const maximum = 6n << BigInt(precision); // Width 3 is 1x; minimum zoom is 0.5x.
-    const nextSpan = requested > maximum ? maximum : requested;
-    if (!nextSpan) {
-      return;
-    }
+      if (!nextSpan) {
+        return;
+      }
 
-    this.view = {
-      centerRe:
-        centerRe +
-        fractionOf(span, from.offsetX - width / 2, width) -
-        fractionOf(nextSpan, to.offsetX - width / 2, width),
-      centerIm:
-        centerIm +
-        fractionOf(span, from.offsetY - height / 2, width) -
-        fractionOf(nextSpan, to.offsetY - height / 2, width),
-      span: nextSpan,
-      precision,
-    };
-    // Keep at least 64 fractional guard bits beyond one screen pixel before the next gesture.
-    const required = precision - nextSpan.toString(2).length + Math.ceil(Math.log2(width)) + 64;
-    const extra = Math.max(0, Math.ceil(required / 64) * 64 - precision);
-    if (extra) {
       this.view = {
-        centerRe: this.view.centerRe << BigInt(extra),
-        centerIm: this.view.centerIm << BigInt(extra),
-        span: nextSpan << BigInt(extra),
-        precision: precision + extra,
+        centerRe: centerRe + fractionOf(span, from.offsetX - width / 2, width) - fractionOf(nextSpan, to.offsetX - width / 2, width),
+        centerIm: centerIm + fractionOf(span, from.offsetY - height / 2, width) - fractionOf(nextSpan, to.offsetY - height / 2, width),
+        span: nextSpan,
+        precision,
       };
+      // Keep at least 64 fractional guard bits beyond one screen pixel before the next gesture.
+      const required = precision - nextSpan.toString(2).length + Math.ceil(Math.log2(width)) + 64;
+      const extra = Math.max(0, Math.ceil(required / 64) * 64 - precision);
+
+      if (extra) {
+        this.view = {
+          centerRe: this.view.centerRe << BigInt(extra),
+          centerIm: this.view.centerIm << BigInt(extra),
+          span: nextSpan << BigInt(extra),
+          precision: precision + extra,
+        };
+      }
     }
   }
 
@@ -184,6 +175,7 @@ export class FractalViewport {
 
   public zoomLabel(): string {
     const hundredths = ((3n << BigInt(this.view.precision)) * 100n + this.view.span / 2n) / this.view.span;
+
     if (hundredths < 1000000n) {
       return (Number(hundredths) / 100).toString();
     }

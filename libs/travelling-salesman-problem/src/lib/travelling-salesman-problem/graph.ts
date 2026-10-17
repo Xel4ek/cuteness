@@ -77,6 +77,7 @@ export class Graph implements Comparable {
 
     while (path.length > 0) {
       const nextIndex = path.findIndex((pair) => pair[0] === current[1]); // ищем в массиве дугу у которой нулевой элемент равен 1 элементу предыдущей дуги
+
       if (nextIndex !== -1) {
         current = path[nextIndex];
         path.splice(nextIndex, 1);
@@ -103,7 +104,7 @@ export class Graph implements Comparable {
     const curRow = this.indexes.rows.indexOf(row);
     const curCol = this.indexes.cols.indexOf(col);
 
-    const updated = this.matrix.map((row) => [...row]);
+    const updated = this.matrix.map((matrixRow) => [...matrixRow]);
 
     const newPath: [number, number][] = [...this.path, [row, col]];
     let head = row;
@@ -111,17 +112,21 @@ export class Graph implements Comparable {
 
     while (true) {
       const predecessor = newPath.find(([_, destination]) => destination === head);
+
       if (!predecessor) {
         break;
       }
+
       head = predecessor[0];
     }
 
     while (true) {
       const successor = newPath.find(([origin]) => origin === tail);
+
       if (!successor) {
         break;
       }
+
       tail = successor[1];
     }
 
@@ -134,9 +139,7 @@ export class Graph implements Comparable {
       }
     }
 
-    const newMatrix = updated
-      .filter((_, rowIndex) => rowIndex !== curRow)
-      .map((row) => row.filter((_, colIndex) => colIndex !== curCol));
+    const newMatrix = updated.filter((_, rowIndex) => rowIndex !== curRow).map((matrixRow) => matrixRow.filter((_, colIndex) => colIndex !== curCol));
 
     const { matrix, lowerBound } = Graph.reduceMatrix(newMatrix);
 
@@ -175,6 +178,7 @@ export class Graph implements Comparable {
 
       for (const row of this.matrix) {
         const value = row[column];
+
         if (value <= first) {
           second = first;
           first = value;

@@ -4,11 +4,7 @@ import { layoutByCost } from './graph-layout';
 
 describe('graph layout by travel cost', () => {
   const distance = (positions: ReturnType<typeof layoutByCost>, from: number, to: number) =>
-    Math.hypot(
-      positions[from].x - positions[to].x,
-      positions[from].y - positions[to].y,
-      positions[from].z - positions[to].z,
-    );
+    Math.hypot(positions[from].x - positions[to].x, positions[from].y - positions[to].y, positions[from].z - positions[to].z);
 
   it('fits a consistent cost matrix while preserving the input and repeatable positions', () => {
     const matrix = [
@@ -58,18 +54,15 @@ describe('graph layout by travel cost', () => {
     ]) {
       const positions = layoutByCost(matrix);
       expect(positions).toHaveLength(matrix.length);
-      expect(positions.every(({ x, y, z }) => Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z))).toBe(
-        true,
-      );
+      expect(positions.every(({ x, y, z }) => Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z))).toBe(true);
       expect(new Set(positions.map(({ x, y, z }) => `${x},${y},${z}`)).size).toBe(matrix.length);
     }
   });
 
   it('uses a third dimension for four cities with equal pairwise costs', () => {
-    const positions = layoutByCost(
-      Array.from({ length: 4 }, (_, i) => Array.from({ length: 4 }, (_, j) => Number(i !== j))),
-    );
+    const positions = layoutByCost(Array.from({ length: 4 }, (_, i) => Array.from({ length: 4 }, (_cell, j) => Number(i !== j))));
     const side = distance(positions, 0, 1);
+
     for (let i = 0; i < 4; i++) {
       for (let j = i + 1; j < 4; j++) {
         expect(distance(positions, i, j) / side).toBeCloseTo(1, 2);

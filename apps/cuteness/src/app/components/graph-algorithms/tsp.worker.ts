@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
-import { GraphAlgorithms, TsmResult } from '@cuteness/travelling-salesman-problem';
 import { solve_traveling_salesman_problem_little_js } from '@cuteness/graph-algorithms-wasm';
+import { GraphAlgorithms, TsmResult } from '@cuteness/travelling-salesman-problem';
 
 interface WorkerInputMessage {
   method: 'Ants' | 'Genetic' | 'Little' | 'LittleWASM';
@@ -35,6 +35,7 @@ const algorithms = {
 self.onmessage = ({ data }: { data: WorkerInputMessage }) => {
   const { method, adjacencyMatrix } = data;
   const algorithm = algorithms[method];
+
   if (algorithm) {
     const start = performance.now();
     const solution = algorithm(adjacencyMatrix);

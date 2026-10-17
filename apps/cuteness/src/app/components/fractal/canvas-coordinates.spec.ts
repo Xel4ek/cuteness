@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { getCanvasCoordinates } from './canvas-coordinates';
 
 describe('canvas input coordinates', () => {

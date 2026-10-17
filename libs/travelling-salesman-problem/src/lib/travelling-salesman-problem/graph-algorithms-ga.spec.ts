@@ -28,9 +28,7 @@ function boundedRandom(seed: number, maxCalls: number): () => number {
 function assertHamiltonianCycle(matrix: number[][], result: TsmResult, expectedDistance?: number) {
   expect(result.vertices).toHaveLength(matrix.length + 1);
   expect(result.vertices[0]).toBe(result.vertices.at(-1));
-  expect(new Set(result.vertices.slice(0, -1))).toEqual(
-    new Set(Array.from({ length: matrix.length }, (_, index) => index)),
-  );
+  expect(new Set(result.vertices.slice(0, -1))).toEqual(new Set(Array.from({ length: matrix.length }, (_, index) => index)));
 
   const distance = result.vertices.slice(1).reduce((total, to, index) => {
     const weight = matrix[result.vertices[index]][to];
@@ -40,6 +38,7 @@ function assertHamiltonianCycle(matrix: number[][], result: TsmResult, expectedD
   }, 0);
 
   expect(result.distance).toBe(distance);
+
   if (expectedDistance !== undefined) {
     expect(result.distance).toBe(expectedDistance);
   }
@@ -55,6 +54,7 @@ function plantedCycle(size: number): number[][] {
   }
 
   const matrix = Array.from({ length: size }, () => Array<number>(size).fill(0));
+
   for (let index = 0; index < size; index++) {
     matrix[permutation[index]][permutation[(index + 1) % size]] = 1;
   }
@@ -65,9 +65,7 @@ function plantedCycle(size: number): number[][] {
 function denseAsymmetricMatrix(size: number, seed: number): number[][] {
   const random = seededRandom(seed);
 
-  return Array.from({ length: size }, (_, row) =>
-    Array.from({ length: size }, (_, column) => (row === column ? 0 : 1 + Math.floor(random() * 99))),
-  );
+  return Array.from({ length: size }, (_, row) => Array.from({ length: size }, (_cell, column) => (row === column ? 0 : 1 + Math.floor(random() * 99))));
 }
 
 describe('GraphAlgorithms.solveTravelingSalesmanProblemGA', () => {
@@ -87,6 +85,7 @@ describe('GraphAlgorithms.solveTravelingSalesmanProblemGA', () => {
     const result = GraphAlgorithms.solveTravelingSalesmanProblemGA(matrix);
 
     expect(result).not.toBeNull();
+
     if (result) {
       assertHamiltonianCycle(matrix, result, 18);
     }
@@ -108,6 +107,7 @@ describe('GraphAlgorithms.solveTravelingSalesmanProblemGA', () => {
     const result = GraphAlgorithms.solveTravelingSalesmanProblemGA(matrix);
 
     expect(result).not.toBeNull();
+
     if (result) {
       assertHamiltonianCycle(matrix, result);
       expect(result.distance).toBeLessThanOrEqual(107);
@@ -121,6 +121,7 @@ describe('GraphAlgorithms.solveTravelingSalesmanProblemGA', () => {
     const result = GraphAlgorithms.solveTravelingSalesmanProblemGA(matrix);
 
     expect(result).not.toBeNull();
+
     if (result) {
       assertHamiltonianCycle(matrix, result);
       expect(result.distance).toBeLessThan(171);
@@ -134,6 +135,7 @@ describe('GraphAlgorithms.solveTravelingSalesmanProblemGA', () => {
     const result = GraphAlgorithms.solveTravelingSalesmanProblemGA(matrix);
 
     expect(result).not.toBeNull();
+
     if (result) {
       assertHamiltonianCycle(matrix, result, size);
     }
@@ -148,9 +150,11 @@ describe('GraphAlgorithms.solveTravelingSalesmanProblemGA', () => {
       const result = GraphAlgorithms.solveTravelingSalesmanProblemGA(matrix);
 
       expect(result, `${size} cities`).not.toBeNull();
+
       if (result) {
         assertHamiltonianCycle(matrix, result);
       }
+
       expect(matrix).toEqual(before);
       vi.restoreAllMocks();
     }

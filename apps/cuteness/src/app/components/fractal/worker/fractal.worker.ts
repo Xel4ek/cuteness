@@ -1,9 +1,9 @@
 /// <reference lib="webworker" />
-import { fixedToNumber, FractalPoint, FractalView, pointAt, scaledParts } from '../fractal-viewport';
+import { FractalPoint, FractalView, fixedToNumber, pointAt, scaledParts } from '../fractal-viewport';
+import { ReferenceOrbit, buildReference, referencesInView } from './mandelbrot-math';
+import { mandelbrotShader } from './mandelbrot-shader';
 import { MandelbrotWorkerCommand } from './mandelbrot-worker-command';
 import { MandelbrotWorkerResult } from './mandelbrot-worker-result';
-import { buildReference, ReferenceOrbit, referencesInView } from './mandelbrot-math';
-import { mandelbrotShader } from './mandelbrot-shader';
 import { WorkerEvent } from './worker-event';
 
 class Mandelbrot {
@@ -26,11 +26,13 @@ class Mandelbrot {
   public async init(canvas: OffscreenCanvas): Promise<void> {
     const adapter = await navigator.gpu?.requestAdapter();
     const device = await adapter?.requestDevice();
+
     if (!device) {
       throw new Error('This fractal requires a browser with WebGPU support.');
     }
 
     const context = canvas.getContext('webgpu');
+
     if (!context) {
       throw new Error('Could not create the WebGPU canvas context.');
     }
@@ -56,14 +58,14 @@ class Mandelbrot {
   }
 
   public resize(width: number, height: number): void {
-    if (this.canvas.width === width && this.canvas.height === height) {
-      return;
-    }
-    this.canvas.width = width;
-    this.canvas.height = height;
-    this.allocatePixels();
-    if (this.orbit) {
-      this.createBindings();
+    if (this.canvas.width !== width || this.canvas.height !== height) {
+      this.canvas.width = width;
+      this.canvas.height = height;
+      this.allocatePixels();
+
+      if (this.orbit) {
+        this.createBindings();
+      }
     }
   }
 
@@ -73,12 +75,10 @@ class Mandelbrot {
     this.readback?.destroy();
     const { width, height } = this.canvas;
     this.pixels = this.buffer(width * height * 4, GPUBufferUsage.STORAGE);
-    this.indices = this.buffer(
-      width * height * 4,
-      GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
-    );
+    this.indices = this.buffer(width * height * 4, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC);
     this.readback = this.buffer(width * height * 4, GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST);
     this.initialIndices = new Uint32Array(width * height);
+
     for (let index = 0; index < this.initialIndices.length; index++) {
       this.initialIndices[index] = index;
     }
@@ -89,12 +89,11 @@ class Mandelbrot {
   }
 
   private allocateOrbit(maximum: number): void {
-    if (this.orbit?.size === (maximum + 1) * 32) {
-      return;
+    if (this.orbit?.size !== (maximum + 1) * 32) {
+      this.orbit?.destroy();
+      this.orbit = this.buffer((maximum + 1) * 32, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST);
+      this.createBindings();
     }
-    this.orbit?.destroy();
-    this.orbit = this.buffer((maximum + 1) * 32, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST);
-    this.createBindings();
   }
 
   private createBindings(): void {
@@ -125,12 +124,7 @@ class Mandelbrot {
     integers.set([this.canvas.width, this.canvas.height, maximum, 0]);
     const [spanMantissa, , spanExponent] = scaledParts(view.span, 0n, view.precision);
     floats.set(
-      [
-        fixedToNumber(view.centerRe, view.precision),
-        fixedToNumber(view.centerIm, view.precision),
-        fixedToNumber(view.span, view.precision) / this.canvas.width,
-        spanMantissa,
-      ],
+      [fixedToNumber(view.centerRe, view.precision), fixedToNumber(view.centerIm, view.precision), fixedToNumber(view.span, view.precision) / this.canvas.width, spanMantissa],
       4,
     );
     signed[8] = spanExponent;
@@ -144,10 +138,7 @@ class Mandelbrot {
     const span = view.span << BigInt(origin.precision - view.precision);
     const width = BigInt(this.canvas.width);
     // Subtract fixed-point coordinates before converting to screen-space floats.
-    floats.set([
-      fixedToNumber((((reference.point.re - origin.re) * width) << 32n) / span, 32),
-      fixedToNumber((((reference.point.im - origin.im) * width) << 32n) / span, 32),
-    ]);
+    floats.set([fixedToNumber((((reference.point.re - origin.re) * width) << 32n) / span, 32), fixedToNumber((((reference.point.im - origin.im) * width) << 32n) / span, 32)]);
     integers.set([reference.iterations, reference.length, pixel], 2);
     this.device.queue.writeBuffer(this.references, 0, data);
   }
@@ -177,6 +168,7 @@ class Mandelbrot {
     this.device.queue.writeBuffer(this.parameters, 12, new Uint32Array([count]));
     const batchSize = 262144;
     let offset = 0;
+
     while (offset < count) {
       const size = Math.min(batchSize, count - offset);
       this.device.queue.writeBuffer(this.parameters, 40, new Uint32Array([offset]));
@@ -188,10 +180,12 @@ class Mandelbrot {
       pass.end();
       this.device.queue.submit([encoder.finish()]);
       offset += size;
+
       if (offset < count) {
         await this.device.queue.onSubmittedWorkDone();
       }
     }
+
     const encoder = this.device.createCommandEncoder();
     encoder.copyBufferToBuffer(this.indices, 0, this.readback, 0, count * 4);
     this.device.queue.submit([encoder.finish()]);
@@ -200,6 +194,7 @@ class Mandelbrot {
     this.readback.unmap();
 
     let unresolved = 0;
+
     for (let index = 0; index < remaining.length; index++) {
       if (remaining[index] !== 0xffffffff) {
         remaining[unresolved++] = remaining[index];
@@ -225,30 +220,26 @@ class Mandelbrot {
     while (active.length) {
       let reference = cached[referenceCount];
       let referencePixel = 0xffffffff;
+
       if (!reference) {
-        referencePixel =
-          referenceCount === 0
-            ? Math.floor(height / 2) * width + Math.floor(width / 2)
-            : active[Math.floor(active.length / 2)];
-        const point = pointAt(
-          view,
-          width,
-          height,
-          (referencePixel % width) + 0.5,
-          Math.floor(referencePixel / width) + 0.5,
-        );
+        referencePixel = referenceCount === 0 ? Math.floor(height / 2) * width + Math.floor(width / 2) : active[Math.floor(active.length / 2)];
+        const point = pointAt(view, width, height, (referencePixel % width) + 0.5, Math.floor(referencePixel / width) + 0.5);
         reference = buildReference(point, maximum);
         this.cachedReferences.push(reference);
+
         if (this.cachedReferences.length > 16) {
           this.cachedReferences.shift();
         }
+
         referencesBuilt++;
       }
+
       this.device.queue.writeBuffer(this.orbit, 0, reference.samples);
       this.writeReference(reference, origin, view, referencePixel);
       active = await this.calculate(active);
       referenceCount++;
     }
+
     this.display();
     await this.device.queue.onSubmittedWorkDone();
     const image = this.canvas.transferToImageBitmap();
@@ -266,11 +257,12 @@ class Mandelbrot {
 const mandelbrot = new Mandelbrot();
 // The component sends another request only after receiving the completed frame.
 self.onmessage = async ({ data }: MessageEvent<MandelbrotWorkerCommand>) => {
-  if (data.type === WorkerEvent.init) {
+  if (data.type === WorkerEvent.Init) {
     await mandelbrot.init(data.offscreenCanvas);
   } else {
     mandelbrot.resize(data.width, data.height);
   }
+
   const result = await mandelbrot.render(data.coordinates, data.maxIteration);
   self.postMessage(result, [result.image]);
 };

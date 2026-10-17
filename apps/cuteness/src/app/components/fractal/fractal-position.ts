@@ -1,5 +1,6 @@
-import { fixedFromDecimal, FractalView } from './fractal-viewport';
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
+
+import { FractalView, fixedFromDecimal } from './fractal-viewport';
 
 export interface FractalPosition {
   coordinates: FractalView;
@@ -9,23 +10,32 @@ export interface FractalPosition {
 // Keep positions copied before the compressed format was introduced usable.
 function parseLegacyPosition(text: string): FractalPosition | undefined {
   const match = /^Re:\s*([^\r\n]+)\r?\nIm:\s*([^\r\n]+)\r?\nZoom:\s*([^\r\n]+)\r?\nPrecision:\s*(\d+)$/i.exec(text);
+
   if (!match) {
     return;
   }
+
   const precision = Number(match[4]);
+
   if (!Number.isInteger(precision) || precision < 128 || precision > 65536) {
     return;
   }
+
   const values = match.slice(1, 4).map((value) => value.trim());
+
   if (!values.every((value) => /^[+-]?\d+(?:\.\d*)?$/.test(value))) {
     return;
   }
+
   const zoomPrecision = precision + 32;
   const zoom = fixedFromDecimal(values[2], zoomPrecision);
+
   if (zoom < 1n << BigInt(zoomPrecision - 1)) {
     return;
   }
+
   const span = ((3n << BigInt(precision + zoomPrecision)) + zoom / 2n) / zoom;
+
   if (span === 0n) {
     return;
   }
@@ -41,13 +51,7 @@ function parseLegacyPosition(text: string): FractalPosition | undefined {
 }
 
 export function copyPosition(view: FractalView, maxIteration: number): string {
-  const data = [
-    view.precision,
-    maxIteration,
-    view.centerRe.toString(16),
-    view.centerIm.toString(16),
-    view.span.toString(16),
-  ].join('|');
+  const data = [view.precision, maxIteration, view.centerRe.toString(16), view.centerIm.toString(16), view.span.toString(16)].join('|');
 
   return `fractal:1:${compressToEncodedURIComponent(data)}`;
 }
@@ -56,35 +60,47 @@ export function parsePosition(text: string): FractalPosition | undefined {
   if (text.length > 1000000) {
     return;
   }
+
   text = text.trim();
+
   if (/^https?:\/\//i.test(text)) {
     if (!URL.canParse(text)) {
       return;
     }
+
     const url = new URL(text);
     const queryStart = url.hash.indexOf('?');
     const hashPosition = queryStart >= 0 ? new URLSearchParams(url.hash.slice(queryStart + 1)).get('position') : null;
     text = hashPosition ?? url.searchParams.get('position') ?? '';
   }
+
   if (!text.startsWith('fractal:1:')) {
     return parseLegacyPosition(text);
   }
+
   const encoded = text.slice('fractal:1:'.length);
+
   if (!/^[\w+$-]+$/.test(encoded)) {
     return;
   }
+
   const data = decompressFromEncodedURIComponent(encoded);
   const match = data && /^(\d+)\|(\d+)\|(-?[\da-f]+)\|(-?[\da-f]+)\|([\da-f]+)$/.exec(data);
+
   if (!match) {
     return;
   }
+
   const precision = Number(match[1]);
   const maxIteration = Number(match[2]);
+
   if (precision < 128 || precision > 65536 || maxIteration < 100 || maxIteration > 50000) {
     return;
   }
+
   const fromHex = (value: string) => (value.startsWith('-') ? -BigInt(`0x${value.slice(1)}`) : BigInt(`0x${value}`));
   const span = fromHex(match[5]);
+
   if (span === 0n || span > 6n << BigInt(precision)) {
     return;
   }
@@ -100,9 +116,11 @@ export function fixedToDecimal(value: bigint, precision: number, places = precis
   const magnitude = value < 0n ? -value : value;
   const scale = 10n ** BigInt(places);
   const rounded = (magnitude * scale + (1n << BigInt(precision - 1))) >> BigInt(precision);
+
   if (rounded === 0n) {
     return '0';
   }
+
   const digits = rounded.toString().padStart(places + 1, '0');
   const integer = digits.slice(0, digits.length - places);
   const fraction = digits.slice(digits.length - places).replace(/0+$/, '');

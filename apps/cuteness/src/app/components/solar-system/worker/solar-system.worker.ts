@@ -74,6 +74,7 @@ class SolarSystem extends BaseWebGPU {
     await super.init(offscreenCanvas);
 
     const context = this.context;
+
     if (!context) {
       throw new Error('Could not create a WebGPU canvas context');
     }
@@ -86,7 +87,7 @@ class SolarSystem extends BaseWebGPU {
     this.pipeline = this.device?.createRenderPipeline({
       label: 'our hardcoded red triangle pipeline',
       layout: 'auto',
-      primitive: { topology: `triangle-strip` },
+      primitive: { topology: 'triangle-strip' },
       vertex: {
         module: this.module!,
       },
@@ -142,7 +143,7 @@ class SolarSystem extends BaseWebGPU {
     // });
   }
 
-  public updateUniforms(leftBound: number, rightBound: number, topBound?: number) {
+  public updateUniforms(_leftBound: number, _rightBound: number, _topBound?: number) {
     // const pixPerDin = (rightBound - leftBound)/this.offscreenCanvas.width;
     // const hPix = -this.offscreenCanvas.height * pixPerDin / 2;
     //
@@ -182,29 +183,29 @@ const solarSystem = new SolarSystem();
 const render = solarSystem.render.bind(solarSystem);
 
 export enum WorkerEvent {
-  init = 'init',
-  render = 'render',
-  coordinates = 'coordinates',
-  settings = 'settings',
+  Init = 'init',
+  Render = 'render',
+  Coordinates = 'coordinates',
+  Settings = 'settings',
 }
 
 export type SolarSystemWorkerCommand =
   | {
-      type: WorkerEvent.init;
+      type: WorkerEvent.Init;
       offscreenCanvas: OffscreenCanvas;
     }
   | {
-      type: WorkerEvent.settings;
+      type: WorkerEvent.Settings;
       maxIteration: number;
     };
 
 self.onmessage = async ({ data }: MessageEvent<SolarSystemWorkerCommand>) => {
   switch (data.type) {
-    case WorkerEvent.init:
+    case WorkerEvent.Init:
       await solarSystem.init(data.offscreenCanvas);
       // mandelbrot.updateUniforms(-2, 1);
       break;
-    case WorkerEvent.settings:
+    case WorkerEvent.Settings:
       // solarSystem.updateSettings(data.maxIteration);
       break;
   }

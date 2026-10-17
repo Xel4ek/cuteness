@@ -10,6 +10,7 @@ export interface TsmResult {
 export class GraphAlgorithms {
   public static solveTravelingSalesmanProblemACO(graph: number[][]): TsmResult | null {
     const numCities = graph.length;
+
     if (numCities < 2) {
       return null;
     }
@@ -35,6 +36,7 @@ export class GraphAlgorithms {
     for (let from = 0; from < numCities; from++) {
       for (let to = 0; to < numCities; to++) {
         const weight = graph[from]?.[to];
+
         if (from !== to && weight !== undefined && Number.isFinite(weight) && weight > 0) {
           neighbors[from].push({ city: to, inverseDistance: 1 / weight });
           incomingEdges[to]++;
@@ -77,8 +79,8 @@ export class GraphAlgorithms {
                 fallback = neighbor.city;
               }
 
-              const transitionWeight =
-                Math.pow(pheromone[current][neighbor.city], alpha) * Math.pow(neighbor.inverseDistance, beta);
+              const transitionWeight = Math.pow(pheromone[current][neighbor.city], alpha) * Math.pow(neighbor.inverseDistance, beta);
+
               if (Number.isFinite(transitionWeight) && transitionWeight > 0) {
                 totalWeight += transitionWeight;
               }
@@ -91,16 +93,18 @@ export class GraphAlgorithms {
           }
 
           let next = fallback;
+
           if (Number.isFinite(totalWeight) && totalWeight > 0) {
             const target = Math.random() * totalWeight;
             let cumulativeWeight = 0;
 
             for (const neighbor of available) {
               if (!visited[neighbor.city]) {
-                const transitionWeight =
-                  Math.pow(pheromone[current][neighbor.city], alpha) * Math.pow(neighbor.inverseDistance, beta);
+                const transitionWeight = Math.pow(pheromone[current][neighbor.city], alpha) * Math.pow(neighbor.inverseDistance, beta);
+
                 if (Number.isFinite(transitionWeight) && transitionWeight > 0) {
                   cumulativeWeight += transitionWeight;
+
                   if (cumulativeWeight >= target) {
                     next = neighbor.city;
                     break;
@@ -118,17 +122,13 @@ export class GraphAlgorithms {
         }
 
         const closingCost = graph[current]?.[start];
-        if (
-          !complete ||
-          closingCost === undefined ||
-          !Number.isFinite(closingCost) ||
-          closingCost <= 0 ||
-          !Number.isFinite(cost + closingCost)
-        ) {
+
+        if (!complete || closingCost === undefined || !Number.isFinite(closingCost) || closingCost <= 0 || !Number.isFinite(cost + closingCost)) {
           continue;
         }
 
         cost += closingCost;
+
         if (cost < bestDistance) {
           bestDistance = cost;
           bestPath = [...path, start];
@@ -136,6 +136,7 @@ export class GraphAlgorithms {
         }
 
         const deposit = Q / cost;
+
         if (!Number.isFinite(deposit) || deposit <= 0) {
           continue;
         }
@@ -149,10 +150,7 @@ export class GraphAlgorithms {
 
       for (let from = 0; from < numCities; from++) {
         for (const neighbor of neighbors[from]) {
-          pheromone[from][neighbor.city] = Math.max(
-            pheromoneFloor,
-            evaporation * pheromone[from][neighbor.city] + deposits[from][neighbor.city],
-          );
+          pheromone[from][neighbor.city] = Math.max(pheromoneFloor, evaporation * pheromone[from][neighbor.city] + deposits[from][neighbor.city]);
         }
       }
 
@@ -172,12 +170,12 @@ export class GraphAlgorithms {
 
   public static solveTravelingSalesmanProblemGA(graph: number[][]): TsmResult | null {
     const numCities = graph.length;
+
     if (numCities < 2) {
       return null;
     }
 
-    const isPresentEdge = (weight: number | undefined): weight is number =>
-      weight !== undefined && Number.isFinite(weight) && weight !== 0;
+    const isPresentEdge = (weight: number | undefined): weight is number => weight !== undefined && Number.isFinite(weight) && weight !== 0;
     const edgeWeight = (from: number, to: number): number | undefined => {
       const weight = graph[from]?.[to];
 
@@ -199,8 +197,7 @@ export class GraphAlgorithms {
       cost: number;
     }
 
-    const compareIndividuals = (left: Individual, right: Individual): number =>
-      left.missingEdges - right.missingEdges || left.cost - right.cost;
+    const compareIndividuals = (left: Individual, right: Individual): number => left.missingEdges - right.missingEdges || left.cost - right.cost;
 
     const evaluate = (path: number[]): Individual => {
       let missingEdges = 0;
@@ -208,6 +205,7 @@ export class GraphAlgorithms {
 
       for (let index = 0; index < path.length; index++) {
         const weight = edgeWeight(path[index], path[(index + 1) % path.length]);
+
         if (weight === undefined) {
           missingEdges++;
         } else {
@@ -220,6 +218,7 @@ export class GraphAlgorithms {
 
     const randomPath = (): number[] => {
       const path = Array.from({ length: numCities }, (_, index) => index);
+
       for (let index = path.length - 1; index > 0; index--) {
         const target = Math.floor(Math.random() * (index + 1));
         [path[index], path[target]] = [path[target], path[index]];
@@ -240,6 +239,7 @@ export class GraphAlgorithms {
 
         for (let city = 0; city < numCities; city++) {
           const weight = edgeWeight(current, city);
+
           if (!used[city] && weight !== undefined && (weight < nextWeight || (weight === nextWeight && city < next))) {
             next = city;
             nextWeight = weight;
@@ -265,12 +265,14 @@ export class GraphAlgorithms {
 
     const mutate = (path: number[]): number[] => {
       const mutatedPath = [...path];
+
       if (mutatedPath.length < 2 || Math.random() >= 0.05) {
         return mutatedPath;
       }
 
       let first = Math.floor(Math.random() * mutatedPath.length);
       let second = Math.floor(Math.random() * (mutatedPath.length - 1));
+
       if (second >= first) {
         second++;
       }
@@ -300,9 +302,11 @@ export class GraphAlgorithms {
       }
 
       let childIndex = (end + 1) % numCities;
+
       for (let offset = 0; offset < numCities; offset++) {
         const parentIndex = (end + 1 + offset) % numCities;
         const city = parent2[parentIndex];
+
         if (!included[city]) {
           child[childIndex] = city;
           included[city] = true;
@@ -323,6 +327,7 @@ export class GraphAlgorithms {
     const evaluateCandidate = (path: number[]): Individual => {
       const candidate = evaluate(path);
       paths++;
+
       if (!bestIndividual || compareIndividuals(candidate, bestIndividual) < 0) {
         bestIndividual = candidate;
       }
@@ -331,14 +336,17 @@ export class GraphAlgorithms {
     };
 
     let population = Array.from({ length: popSize }, () => evaluateCandidate(randomPath()));
+
     for (let start = 0; start < Math.min(numCities, 8); start++) {
       population.push(evaluateCandidate(greedyPath(start)));
     }
 
     const tournamentSelection = (candidates: Individual[]): Individual => {
       let selected = candidates[Math.floor(Math.random() * candidates.length)];
+
       for (let attempt = 1; attempt < 3; attempt++) {
         const contender = candidates[Math.floor(Math.random() * candidates.length)];
+
         if (compareIndividuals(contender, selected) < 0) {
           selected = contender;
         }
@@ -348,6 +356,7 @@ export class GraphAlgorithms {
     };
 
     let stagnantGenerations = 0;
+
     for (let generation = 0; generation < generations && stagnantGenerations < maxStagnantGenerations; generation++) {
       population.sort(compareIndividuals);
       const previousBest = bestIndividual!;
@@ -359,6 +368,7 @@ export class GraphAlgorithms {
       }
 
       population = nextPopulation;
+
       if (compareIndividuals(bestIndividual!, previousBest) < 0) {
         stagnantGenerations = 0;
       } else {
@@ -398,6 +408,7 @@ export class GraphAlgorithms {
 
       if (candidate.isScalar()) {
         const vertices = candidate.restorePath();
+
         if (vertices.length === graph.length + 1) {
           return {
             vertices,

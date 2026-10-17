@@ -1,13 +1,14 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, signal } from '@angular/core';
-import { disabled, form, FormField } from '@angular/forms/signals';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormField, disabled, form } from '@angular/forms/signals';
 import { By } from '@angular/platform-browser';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { IterationControlComponent } from './iteration-control.component';
 
 @Component({
-  imports: [FormField, IterationControlComponent],
   template: '<cuteness-iteration-control [formField]="settings.iterations" />',
+  imports: [FormField, IterationControlComponent],
 })
 class IterationControlHost {
   public readonly data = signal({ iterations: 2000 });
@@ -88,10 +89,12 @@ describe('iteration control', () => {
     enter('');
     apply();
     expect(input.value).toBe('2000');
+
     for (const value of ['1.5', '-20', '2e3', 'hello']) {
       enter(value);
       expect(input.value).toBe('2000');
     }
+
     expect(emit).not.toHaveBeenCalled();
   });
 
@@ -113,9 +116,7 @@ describe('iteration control', () => {
     host.isDisabled.set(true);
     fixture.detectChanges();
     expect(input.disabled).toBe(true);
-    expect(
-      [...fixture.nativeElement.querySelectorAll('button')].every((button: HTMLButtonElement) => button.disabled),
-    ).toBe(true);
+    expect([...fixture.nativeElement.querySelectorAll('button')].every((button: HTMLButtonElement) => button.disabled)).toBe(true);
     step('Increase iterations');
     expect(emit).not.toHaveBeenCalled();
     expect(host.data().iterations).toBe(2000);

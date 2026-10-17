@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  fixedFromDecimal,
-  fixedToNumber,
-  frameProjection,
-  FractalViewport,
-  pointAt,
-  scaledParts,
-} from './fractal-viewport';
+
+import { FractalViewport, fixedFromDecimal, fixedToNumber, frameProjection, pointAt, scaledParts } from './fractal-viewport';
 
 const origin = { offsetX: 400, offsetY: 300 };
 const overview = { centerRe: -1n << 127n, centerIm: 0n, span: 3n << 128n, precision: 128 };
@@ -15,11 +9,7 @@ describe('high precision fractal viewport', () => {
   it('projects an existing frame around the gesture anchor and follows a pan', () => {
     const viewport = new FractalViewport(overview);
     const frame = viewport.snapshot();
-    viewport.transform(
-      { from: { offsetX: 200, offsetY: 150 }, to: { offsetX: 225, offsetY: 160 }, scale: 0.5 },
-      800,
-      600,
-    );
+    viewport.transform({ from: { offsetX: 200, offsetY: 150 }, to: { offsetX: 225, offsetY: 160 }, scale: 0.5 }, 800, 600);
     const projection = frameProjection(frame, viewport.snapshot(), 800, 600);
     expect(projection.scale).toBe(2);
     expect(projection.x).toBeCloseTo(-175);
@@ -37,7 +27,11 @@ describe('high precision fractal viewport', () => {
 
   it('projects tiny viewport changes without rounding their full-size centers', () => {
     const viewport = new FractalViewport(overview);
-    for (let i = 0; i < 1200; i++) viewport.transform({ from: origin, to: origin, scale: 0.5 }, 800, 600);
+
+    for (let i = 0; i < 1200; i++) {
+      viewport.transform({ from: origin, to: origin, scale: 0.5 }, 800, 600);
+    }
+
     const frame = viewport.snapshot();
     viewport.transform({ from: origin, to: { offsetX: 425, offsetY: 310 }, scale: 0.5 }, 800, 600);
     const projection = frameProjection(frame, viewport.snapshot(), 800, 600);
@@ -54,7 +48,11 @@ describe('high precision fractal viewport', () => {
 
   it('keeps adjacent pixels distinct after zooming far beyond f64', () => {
     const viewport = new FractalViewport(overview);
-    for (let i = 0; i < 1200; i++) viewport.transform({ from: origin, to: origin, scale: 0.5 }, 800, 600);
+
+    for (let i = 0; i < 1200; i++) {
+      viewport.transform({ from: origin, to: origin, scale: 0.5 }, 800, 600);
+    }
+
     const view = viewport.snapshot();
     expect(view.precision).toBeGreaterThan(1200);
     expect(viewport.zoomLabel()).toMatch(/e361$/);
@@ -67,11 +65,7 @@ describe('high precision fractal viewport', () => {
   it('preserves the gesture anchor, pans, and limits zoom-out to 0.5x', () => {
     const viewport = new FractalViewport(overview);
     const before = pointAt(viewport.snapshot(), 800, 600, 200, 150);
-    viewport.transform(
-      { from: { offsetX: 200, offsetY: 150 }, to: { offsetX: 200, offsetY: 150 }, scale: 0.5 },
-      800,
-      600,
-    );
+    viewport.transform({ from: { offsetX: 200, offsetY: 150 }, to: { offsetX: 200, offsetY: 150 }, scale: 0.5 }, 800, 600);
     const after = pointAt(viewport.snapshot(), 800, 600, 200, 150);
     expect(after).toEqual(before);
     viewport.transform({ from: origin, to: { offsetX: 450, offsetY: 350 }, scale: 1 }, 800, 600);

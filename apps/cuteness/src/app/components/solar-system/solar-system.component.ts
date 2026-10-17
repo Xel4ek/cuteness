@@ -1,13 +1,12 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 
 import { FullScreenDirective } from '../fractal/directives/full-screen/full-screen.directive';
 
 @Component({
   selector: 'cuteness-solar-system',
-  imports: [FullScreenDirective],
   templateUrl: './solar-system.component.html',
   styleUrl: './solar-system.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FullScreenDirective],
 })
 export default class SolarSystemComponent implements AfterViewInit, OnDestroy {
   private readonly worker = new Worker(new URL('./worker/solar-system.worker.ts', import.meta.url), { type: 'module' });

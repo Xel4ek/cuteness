@@ -1,14 +1,14 @@
-import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+
 import { MatrixComponent } from '../matrix/matrix.component';
 
 @Component({
   selector: 'cuteness-matrix-preview',
-  imports: [MatButtonModule, MatIconModule, MatrixComponent],
   templateUrl: './matrix-preview.component.html',
   styleUrl: './matrix-preview.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [MatButtonModule, MatIconModule, MatrixComponent],
   host: {
     '(pointerenter)': 'hover($event, true)',
     '(pointerleave)': 'hover($event, false)',
@@ -47,6 +47,7 @@ export class MatrixPreviewComponent {
 
   protected leave(event: FocusEvent): void {
     const host = event.currentTarget as HTMLElement;
+
     if (!host.contains(event.relatedTarget as Node | null)) {
       this.preview.set(false);
     }

@@ -1,28 +1,31 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Clipboard } from '@angular/cdk/clipboard';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import FractalComponent from './fractal.component';
-import { MandelbrotWorkerCommand } from './worker/mandelbrot-worker-command';
-import { WorkerEvent } from './worker/worker-event';
-import { fixedFromDecimal, fixedToNumber, FractalView } from './fractal-viewport';
-import { IterationControlComponent } from './iteration-control/iteration-control.component';
-import { MainLayoutHeaderService } from '../../layouts/mail-layout/main-layout-header.service';
-import { MandelbrotWorkerResult } from './worker/mandelbrot-worker-result';
-import { copyPosition, parsePosition } from './fractal-position';
 import { provideRouter, withHashLocation } from '@angular/router';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { MainLayoutHeaderService } from '../../layouts/mail-layout/main-layout-header.service';
+import { copyPosition, parsePosition } from './fractal-position';
+import { FractalView, fixedFromDecimal, fixedToNumber } from './fractal-viewport';
+import FractalComponent from './fractal.component';
+import { IterationControlComponent } from './iteration-control/iteration-control.component';
+import { MandelbrotWorkerCommand } from './worker/mandelbrot-worker-command';
+import { MandelbrotWorkerResult } from './worker/mandelbrot-worker-result';
+import { WorkerEvent } from './worker/worker-event';
 
 class WorkerStub {
   public onmessage: ((event: MessageEvent<MandelbrotWorkerResult>) => void) | null = null;
   public autoComplete = true;
   public postMessage = vi.fn<(message: MandelbrotWorkerCommand, transfer?: Transferable[]) => void>(() => {
-    if (this.autoComplete) this.complete();
+    if (this.autoComplete) {
+      this.complete();
+    }
   });
   public terminate = vi.fn();
 
   public complete(renderTimeMs = 0): ImageBitmap {
     const request = this.postMessage.mock.calls.at(-1)?.[0];
-    const size = request?.type === WorkerEvent.init ? request.offscreenCanvas : request;
+    const size = request?.type === WorkerEvent.Init ? request.offscreenCanvas : request;
     const image: ImageBitmap = { width: size?.width ?? 400, height: size?.height ?? 299, close: vi.fn() };
     this.onmessage?.(
       new MessageEvent('message', {
@@ -46,13 +49,12 @@ describe('fractal navigation', () => {
   let worker: WorkerStub;
   let initialSpan: number;
   let originalHref: string;
-  let width: number;
-  let height: number;
+  let viewportWidth: number;
+  let viewportHeight: number;
   let resize: () => void;
 
   function sharedLink(view: FractalView, maxIteration: number): string {
-    return new URL(`/#/fractal?position=${encodeURIComponent(copyPosition(view, maxIteration))}`, window.location.href)
-      .href;
+    return new URL(`/#/fractal?position=${encodeURIComponent(copyPosition(view, maxIteration))}`, window.location.href).href;
   }
 
   function rendered(renderTimeMs: number) {
@@ -63,9 +65,8 @@ describe('fractal navigation', () => {
   }
 
   function coordinates() {
-    const message = worker.postMessage.mock.calls
-      .map(([value]) => value)
-      .findLast((value) => value.type === WorkerEvent.render || value.type === WorkerEvent.init);
+    const message = worker.postMessage.mock.calls.map(([value]) => value).findLast((value) => value.type === WorkerEvent.Render || value.type === WorkerEvent.Init);
+
     if (!message) {
       throw new Error('Expected a coordinate update');
     }
@@ -79,9 +80,7 @@ describe('fractal navigation', () => {
   }
 
   function mouse(type: string, x = 0, y = 0, button = 0, shiftKey = false) {
-    canvas.dispatchEvent(
-      new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button, shiftKey }),
-    );
+    canvas.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button, shiftKey }));
     fixture.detectChanges();
   }
 
@@ -112,10 +111,10 @@ describe('fractal navigation', () => {
   }
 
   beforeEach(async () => {
-    width = 400;
-    height = 299;
-    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => width);
-    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(() => height);
+    viewportWidth = 400;
+    viewportHeight = 299;
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => viewportWidth);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(() => viewportHeight);
     vi.stubGlobal(
       'ResizeObserver',
       class {
@@ -173,26 +172,28 @@ describe('fractal navigation', () => {
     const initial = worker.postMessage.mock.calls.at(-1)?.[0].coordinates;
     const count = worker.postMessage.mock.calls.length;
     worker.autoComplete = false;
-    width = 640;
-    height = 400;
+    viewportWidth = 640;
+    viewportHeight = 400;
     resize();
-    width = 720;
-    height = 480;
+    viewportWidth = 720;
+    viewportHeight = 480;
     resize();
     expect(worker.postMessage).toHaveBeenCalledTimes(count + 1);
     worker.complete();
     expect(worker.postMessage).toHaveBeenCalledTimes(count + 2);
     expect(worker.postMessage.mock.calls.at(-1)?.[0]).toMatchObject({
-      type: WorkerEvent.render,
+      type: WorkerEvent.Render,
       width: 720,
       height: 480,
       coordinates: initial,
     });
     const root: HTMLElement = fixture.nativeElement;
+
     for (const element of root.querySelectorAll('canvas')) {
       expect(element.width).toBe(720);
       expect(element.height).toBe(480);
     }
+
     worker.complete();
     resize();
     expect(worker.postMessage).toHaveBeenCalledTimes(count + 2);
@@ -259,9 +260,7 @@ describe('fractal navigation', () => {
       precision: 128,
     };
     clipboard.readText.mockResolvedValue(sharedLink(view, 4200));
-    const control = fixture.debugElement
-      .query(By.directive(IterationControlComponent))
-      .injector.get(IterationControlComponent);
+    const control = fixture.debugElement.query(By.directive(IterationControlComponent)).injector.get(IterationControlComponent);
     control.value.set(3800);
     fixture.detectChanges();
     const before = worker.postMessage.mock.calls.length;
@@ -287,9 +286,7 @@ describe('fractal navigation', () => {
     vi.stubGlobal('navigator', {
       clipboard: { readText: vi.fn().mockResolvedValue('Re: -0.74\nIm: 0.12\nZoom: 1000\nPrecision: 128') },
     });
-    const control = fixture.debugElement
-      .query(By.directive(IterationControlComponent))
-      .injector.get(IterationControlComponent);
+    const control = fixture.debugElement.query(By.directive(IterationControlComponent)).injector.get(IterationControlComponent);
     control.value.set(3800);
     fixture.detectChanges();
     mouse('contextmenu', 100, 150, 2);
@@ -325,10 +322,12 @@ describe('fractal navigation', () => {
     const input = root.querySelector<HTMLInputElement>('cuteness-iteration-control input');
     expect(input).not.toBeNull();
     input?.focus();
+
     if (input) {
       input.value = '3100';
       input.dispatchEvent(new Event('input', { bubbles: true }));
     }
+
     fixture.detectChanges();
     expect(worker.postMessage.mock.calls.at(-1)?.[0].maxIteration).toBe(2000);
     canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
@@ -338,12 +337,9 @@ describe('fractal navigation', () => {
   });
 
   it('sends iteration signals to the worker after initialization and preserves them during navigation', () => {
-    const control = fixture.debugElement
-      .query(By.directive(IterationControlComponent))
-      .injector.get(IterationControlComponent);
-    const settings = () =>
-      worker.postMessage.mock.calls.map(([message]) => message).map((message) => message.maxIteration);
-    expect(worker.postMessage.mock.calls[0][0].type).toBe(WorkerEvent.init);
+    const control = fixture.debugElement.query(By.directive(IterationControlComponent)).injector.get(IterationControlComponent);
+    const settings = () => worker.postMessage.mock.calls.map(([message]) => message).map((message) => message.maxIteration);
+    expect(worker.postMessage.mock.calls[0][0].type).toBe(WorkerEvent.Init);
     expect(settings()).toEqual([2000]);
     control.value.set(3200);
     fixture.detectChanges();
@@ -380,9 +376,7 @@ describe('fractal navigation', () => {
     expect(header.value['render']).toBeUndefined();
     rendered(300);
     expect(header.value['render']).toBe('300 ms');
-    const control = fixture.debugElement
-      .query(By.directive(IterationControlComponent))
-      .injector.get(IterationControlComponent);
+    const control = fixture.debugElement.query(By.directive(IterationControlComponent)).injector.get(IterationControlComponent);
     control.value.set(3200);
     fixture.detectChanges();
     expect(header.value['render']).toBeUndefined();
@@ -395,9 +389,7 @@ describe('fractal navigation', () => {
     const activeView = worker.postMessage.mock.calls.at(-1)?.[0].coordinates;
     wheel(-100);
     wheel(-100);
-    const control = fixture.debugElement
-      .query(By.directive(IterationControlComponent))
-      .injector.get(IterationControlComponent);
+    const control = fixture.debugElement.query(By.directive(IterationControlComponent)).injector.get(IterationControlComponent);
     control.value.set(3200);
     fixture.detectChanges();
     expect(worker.postMessage).toHaveBeenCalledTimes(activeCount);
@@ -498,7 +490,11 @@ describe('fractal navigation', () => {
     const initial = coordinates();
     const anchorX = initial.leftBound + (100 * initialSpan) / 400;
     const anchorY = initial.topBound + (150 * initialSpan) / 400;
-    for (let i = 0; i < 10; i++) wheel(10000);
+
+    for (let i = 0; i < 10; i++) {
+      wheel(10000);
+    }
+
     expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(6, 10);
     expect(coordinates().leftBound + (100 * 6) / 400).toBeCloseTo(anchorX, 10);
     expect(coordinates().topBound + (150 * 6) / 400).toBeCloseTo(anchorY, 10);
@@ -521,6 +517,7 @@ describe('fractal navigation', () => {
       ]);
       touch('touchend', []);
     }
+
     expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(6, 10);
   });
 

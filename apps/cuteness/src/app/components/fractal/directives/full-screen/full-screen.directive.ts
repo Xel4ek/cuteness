@@ -1,5 +1,5 @@
-import { AfterViewInit, Directive, ElementRef, inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
+import { AfterViewInit, Directive, ElementRef, inject } from '@angular/core';
 
 @Directive({
   selector: '[cutenessFullScreen]',

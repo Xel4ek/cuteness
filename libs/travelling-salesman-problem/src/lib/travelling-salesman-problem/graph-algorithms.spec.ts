@@ -55,7 +55,7 @@ function assertHamiltonianCycle(matrix: number[][], vertices: number[], expected
 
 function createRandomMatrix(size: number, random: () => number, density: number): number[][] {
   return Array.from({ length: size }, (_, row) =>
-    Array.from({ length: size }, (_, col) => {
+    Array.from({ length: size }, (_cell, col) => {
       if (row === col || random() > density) {
         return 0;
       }

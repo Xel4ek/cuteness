@@ -1,10 +1,9 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'cuteness-welcome',
-  imports: [],
   templateUrl: './welcome.component.html',
   styleUrls: ['./welcome.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [],
 })
 export class WelcomeComponent {}

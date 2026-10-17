@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { centerLabels, copyPosition, fixedToDecimal, parsePosition } from './fractal-position';
-import { fixedFromDecimal, fixedToNumber, FractalViewport } from './fractal-viewport';
 import { compressToEncodedURIComponent } from 'lz-string';
+import { describe, expect, it } from 'vitest';
+
+import { centerLabels, copyPosition, fixedToDecimal, parsePosition } from './fractal-position';
+import { FractalViewport, fixedFromDecimal, fixedToNumber } from './fractal-viewport';
 
 describe('fractal center coordinates', () => {
   it('reads exact positions from hash links and previously copied path links, including deep zoom', () => {
@@ -12,6 +13,7 @@ describe('fractal center coordinates', () => {
       precision: 4096,
     };
     const position = copyPosition(view, 3800);
+
     for (const base of ['http://localhost:4200/', 'https://example.com/cuteness/']) {
       const url = new URL(base);
       url.hash = `/fractal?${new URLSearchParams({ other: '1', position })}`;
@@ -34,6 +36,7 @@ describe('fractal center coordinates', () => {
           span,
           precision,
         };
+
         for (const maxIteration of [100, 3800, 50000]) {
           const text = copyPosition(view, maxIteration);
           expect(text).toMatch(/^fractal:1:[\w+$-]+$/);
@@ -46,6 +49,7 @@ describe('fractal center coordinates', () => {
 
   it('rejects unrelated clipboard text and invalid or excessive numeric values', () => {
     const text = 'Re: -0.74543\nIm: 0.113008\nZoom: 1000\nPrecision: 128';
+
     for (const invalid of [
       '',
       'some other text',

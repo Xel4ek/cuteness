@@ -24,6 +24,7 @@ export default [
         },
       ],
       '@angular-eslint/prefer-standalone': 'off',
+      '@angular-eslint/prefer-on-push-component-change-detection': ['error', { allowExplicitOnPush: false }],
     },
   },
   ...nx.configs['flat/angular-template'],

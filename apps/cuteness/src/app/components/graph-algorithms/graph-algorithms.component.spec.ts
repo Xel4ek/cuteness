@@ -1,21 +1,27 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, Input } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { TsmResult } from '@cuteness/travelling-salesman-problem';
 
 import { GraphAlgorithmsComponent } from './graph-algorithms.component';
 import { GraphComponent } from './graph/graph.component';
 import { MatrixPreviewComponent } from './matrix-preview/matrix-preview.component';
 
-import { afterEach, beforeEach, it, expect, describe, vi } from 'vitest';
-
-@Component({ selector: 'cuteness-graph', template: '' })
+@Component({
+  selector: 'cuteness-graph',
+  template: '',
+})
 class GraphStub {
   @Input() public adjacencyMatrix: number[][] = [];
   @Input() public solution: number[] = [];
   public fitView = vi.fn();
 }
 
-@Component({ selector: 'cuteness-matrix-preview', template: '' })
+@Component({
+  selector: 'cuteness-matrix-preview',
+  template: '',
+})
 class MatrixStub {
   @Input() public adjacencyMatrix: number[][] = [];
   @Input() public solution: number[] = [];
@@ -35,9 +41,7 @@ describe('GraphAlgorithmsComponent', () => {
 
   function click(label: string) {
     const root: HTMLElement = fixture.nativeElement;
-    const button = Array.from(root.querySelectorAll('button')).find(
-      (item) => item.getAttribute('aria-label') === label || item.textContent?.trim() === label,
-    );
+    const button = Array.from(root.querySelectorAll('button')).find((item) => item.getAttribute('aria-label') === label || item.textContent?.trim() === label);
     expect(button, label).toBeDefined();
     button?.click();
     fixture.detectChanges();
@@ -102,12 +106,7 @@ describe('GraphAlgorithmsComponent', () => {
 
     const root: HTMLElement = fixture.nativeElement;
     expect(root.querySelectorAll('.algorithm-metrics')).toHaveLength(4);
-    expect(worker.postMessage.mock.calls.map(([message]) => message.method)).toEqual([
-      'LittleWASM',
-      'Little',
-      'Ants',
-      'Genetic',
-    ]);
+    expect(worker.postMessage.mock.calls.map(([message]) => message.method)).toEqual(['LittleWASM', 'Little', 'Ants', 'Genetic']);
     const matrices = worker.postMessage.mock.calls.map(([message]) => message.adjacencyMatrix);
     expect(matrices.every((matrix) => matrix === matrices[0])).toBe(true);
     expect(root.querySelector<HTMLInputElement>('input[type=range]')?.max).toBe('100');

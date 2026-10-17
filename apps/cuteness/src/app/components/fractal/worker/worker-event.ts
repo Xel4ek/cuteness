@@ -1,4 +1,4 @@
 export enum WorkerEvent {
-  init = 'init',
-  render = 'render',
+  Init = 'init',
+  Render = 'render',
 }

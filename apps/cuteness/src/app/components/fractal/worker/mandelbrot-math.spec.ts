@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { fixedFromDecimal, pointAt } from '../fractal-viewport';
 import { buildReference, escapeIterations, referencesInView } from './mandelbrot-math';
 
@@ -38,11 +39,7 @@ describe('high precision Mandelbrot reference', () => {
   });
 
   it('returns the exact iteration count for the reference pixel', () => {
-    for (const coordinates of [
-      point('0', '0'),
-      point('1', '0'),
-      point('-2.0000000000000000000000000000000000000001', '0'),
-    ]) {
+    for (const coordinates of [point('0', '0'), point('1', '0'), point('-2.0000000000000000000000000000000000000001', '0')]) {
       const reference = buildReference(coordinates, 100);
       expect(reference.iterations).toBe(escapeIterations(coordinates, 100));
     }
@@ -59,14 +56,10 @@ describe('high precision Mandelbrot reference', () => {
     const view = { centerRe: 0n, centerIm: 0n, span: fixedFromDecimal('3', 128), precision: 128 };
     const reference = buildReference(pointAt(view, 800, 600, 400.5, 300.5), 100);
     expect(referencesInView([reference], view, 800, 600, 100)).toEqual([reference]);
-    expect(referencesInView([reference], { ...view, centerRe: fixedFromDecimal('0.5', 128) }, 800, 600, 100)).toEqual([
-      reference,
-    ]);
+    expect(referencesInView([reference], { ...view, centerRe: fixedFromDecimal('0.5', 128) }, 800, 600, 100)).toEqual([reference]);
     expect(referencesInView([reference], { ...view, centerRe: fixedFromDecimal('4', 128) }, 800, 600, 100)).toEqual([]);
     expect(referencesInView([reference], view, 800, 600, 200)).toEqual([]);
-    expect(referencesInView([reference], { ...view, precision: 192, span: view.span << 64n }, 800, 600, 100)).toEqual(
-      [],
-    );
+    expect(referencesInView([reference], { ...view, precision: 192, span: view.span << 64n }, 800, 600, 100)).toEqual([]);
   });
 
   it('checks cached positions in fixed point even when floating coordinates would coincide', () => {
@@ -78,8 +71,6 @@ describe('high precision Mandelbrot reference', () => {
     };
     const reference = buildReference(pointAt(view, 20, 20, 10.5, 10.5), 100);
     expect(referencesInView([reference], view, 20, 20, 100)).toEqual([reference]);
-    expect(referencesInView([reference], { ...view, centerRe: view.centerRe + view.span * 2n }, 20, 20, 100)).toEqual(
-      [],
-    );
+    expect(referencesInView([reference], { ...view, centerRe: view.centerRe + view.span * 2n }, 20, 20, 100)).toEqual([]);
   });
 });
