@@ -4,6 +4,7 @@ import FractalComponent from '../fractal.component';
 import { MandelbrotWorkerCommand } from '../worker/mandelbrot-worker-command';
 import { WorkerEvent } from '../worker/worker-event';
 import { MandelbrotWorkerResult } from '../worker/mandelbrot-worker-result';
+import { provideRouter, withHashLocation } from '@angular/router';
 
 describe('fractal iteration settings', () => {
   afterEach(() => {
@@ -43,7 +44,10 @@ describe('fractal iteration settings', () => {
     });
 
     try {
-      await TestBed.configureTestingModule({ imports: [FractalComponent] }).compileComponents();
+      await TestBed.configureTestingModule({
+        imports: [FractalComponent],
+        providers: [provideRouter([], withHashLocation())],
+      }).compileComponents();
       const fixture = TestBed.createComponent(FractalComponent);
       fixture.detectChanges();
       await fixture.whenStable();

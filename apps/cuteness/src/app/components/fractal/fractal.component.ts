@@ -12,6 +12,8 @@ import {
 } from '@angular/core';
 import { signalMethod } from '@ngrx/signals';
 import { Clipboard } from '@angular/cdk/clipboard';
+import { Location } from '@angular/common';
+import { Router } from '@angular/router';
 
 import { FullScreenDirective } from './directives/full-screen/full-screen.directive';
 import { MainLayoutHeaderService } from '../../layouts/mail-layout/main-layout-header.service';
@@ -22,7 +24,7 @@ import { IterationControlComponent } from './iteration-control/iteration-control
 import { SelectAreaDirective } from './directives/select-area/select-area.directive';
 import { CanvasCoordinates, CanvasTransform } from './canvas-coordinates';
 import { frameProjection, FractalView, FractalViewport } from './fractal-viewport';
-import { centerLabels, parsePosition, positionLink } from './fractal-position';
+import { centerLabels, copyPosition, parsePosition } from './fractal-position';
 
 interface FractalFrame {
   coordinates: FractalView;
@@ -41,6 +43,8 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
   private readonly mainLayoutHeaderService = inject(MainLayoutHeaderService);
   private readonly injector = inject(Injector);
   private readonly clipboard = inject(Clipboard);
+  private readonly router = inject(Router);
+  private readonly location = inject(Location);
 
   private readonly worker: Worker = new Worker(new URL('./worker/fractal.worker.ts', import.meta.url), {
     type: 'module',
@@ -146,9 +150,11 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
 
   protected copyCenter(): void {
     this.pasteMessage.set('');
-    this.copied.set(
-      this.clipboard.copy(positionLink(this.viewport.snapshot(), this.maxIteration(), window.location.href)),
-    );
+    const route = this.router.createUrlTree(['/fractal'], {
+      queryParams: { position: copyPosition(this.viewport.snapshot(), this.maxIteration()) },
+    });
+    const path = this.location.prepareExternalUrl(this.router.serializeUrl(route));
+    this.copied.set(this.clipboard.copy(new URL(path, document.baseURI).href));
   }
 
   @HostListener('contextmenu', ['$event'])

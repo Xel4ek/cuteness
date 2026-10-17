@@ -30,7 +30,7 @@ const routes: Route[] = [
 @NgModule({
   imports: [
     RouterModule.forRoot(routes, {
-      useHash: false,
+      useHash: true,
       onSameUrlNavigation: 'reload',
     }),
   ],

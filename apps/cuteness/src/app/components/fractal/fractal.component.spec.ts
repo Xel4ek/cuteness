@@ -5,11 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import FractalComponent from './fractal.component';
 import { MandelbrotWorkerCommand } from './worker/mandelbrot-worker-command';
 import { WorkerEvent } from './worker/worker-event';
-import { fixedFromDecimal, fixedToNumber } from './fractal-viewport';
+import { fixedFromDecimal, fixedToNumber, FractalView } from './fractal-viewport';
 import { IterationControlComponent } from './iteration-control/iteration-control.component';
 import { MainLayoutHeaderService } from '../../layouts/mail-layout/main-layout-header.service';
 import { MandelbrotWorkerResult } from './worker/mandelbrot-worker-result';
-import { parsePosition, positionLink } from './fractal-position';
+import { copyPosition, parsePosition } from './fractal-position';
+import { provideRouter, withHashLocation } from '@angular/router';
 
 class WorkerStub {
   public onmessage: ((event: MessageEvent<MandelbrotWorkerResult>) => void) | null = null;
@@ -43,6 +44,11 @@ describe('fractal navigation', () => {
   let worker: WorkerStub;
   let initialSpan: number;
   let originalHref: string;
+
+  function sharedLink(view: FractalView, maxIteration: number): string {
+    return new URL(`/#/fractal?position=${encodeURIComponent(copyPosition(view, maxIteration))}`, window.location.href)
+      .href;
+  }
 
   function rendered(renderTimeMs: number) {
     const image = worker.complete(renderTimeMs);
@@ -127,7 +133,10 @@ describe('fractal navigation', () => {
     vi.spyOn(document.body, 'clientWidth', 'get').mockReturnValue(400);
     vi.spyOn(document.body, 'clientHeight', 'get').mockReturnValue(365);
 
-    await TestBed.configureTestingModule({ imports: [FractalComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [FractalComponent],
+      providers: [provideRouter([], withHashLocation())],
+    }).compileComponents();
     fixture = TestBed.createComponent(FractalComponent);
     fixture.detectChanges();
     canvas = fixture.nativeElement.querySelector('canvas[cutenessSelectArea]');
@@ -158,7 +167,8 @@ describe('fractal navigation', () => {
     fixture.detectChanges();
     const text = copy.mock.calls[0][0];
     expect(new URL(text).origin).toBe(window.location.origin);
-    expect(new URL(text).searchParams.get('position')).toMatch(/^fractal:1:/);
+    expect(new URL(text).hash).toMatch(/^#\/fractal\?position=fractal/);
+    expect(new URL(text).searchParams.has('position')).toBe(false);
     expect(parsePosition(text)).toEqual({ coordinates: requested, maxIteration: 2000 });
     expect(text).not.toContain('…');
     expect(button.getAttribute('aria-label')).toBe('Fractal link copied');
@@ -173,7 +183,7 @@ describe('fractal navigation', () => {
       span: fixedFromDecimal('0.00003', 128),
       precision: 128,
     };
-    window.history.replaceState(null, '', positionLink(view, 3800, window.location.href));
+    window.history.replaceState(null, '', sharedLink(view, 3800));
     fixture.destroy();
     worker.postMessage.mockClear();
     fixture = TestBed.createComponent(FractalComponent);
@@ -187,7 +197,7 @@ describe('fractal navigation', () => {
     expect(window.location.href).toBe(link);
     const moved = worker.postMessage.mock.calls.at(-1)?.[0].coordinates;
     expect(moved).not.toEqual(view);
-    window.history.replaceState(null, '', positionLink(view, 4200, link));
+    window.history.replaceState(null, '', sharedLink(view, 4200));
     fixture.detectChanges();
     expect(worker.postMessage.mock.calls.at(-1)?.[0].coordinates).toEqual(moved);
     expect(worker.postMessage.mock.calls.at(-1)?.[0].maxIteration).toBe(3800);
@@ -202,7 +212,7 @@ describe('fractal navigation', () => {
       span: fixedFromDecimal('0.00003', 128),
       precision: 128,
     };
-    clipboard.readText.mockResolvedValue(positionLink(view, 4200, window.location.href));
+    clipboard.readText.mockResolvedValue(sharedLink(view, 4200));
     const control = fixture.debugElement
       .query(By.directive(IterationControlComponent))
       .injector.get(IterationControlComponent);

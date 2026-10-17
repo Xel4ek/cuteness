@@ -1,24 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { centerLabels, copyPosition, fixedToDecimal, parsePosition, positionLink } from './fractal-position';
+import { centerLabels, copyPosition, fixedToDecimal, parsePosition } from './fractal-position';
 import { fixedFromDecimal, fixedToNumber, FractalViewport } from './fractal-viewport';
 import { compressToEncodedURIComponent } from 'lz-string';
 
 describe('fractal center coordinates', () => {
-  it('shares exact positions in full links while preserving the domain, deployment path and other parameters', () => {
+  it('reads exact positions from hash links and previously copied path links, including deep zoom', () => {
     const view = {
       centerRe: fixedFromDecimal('-0.74543', 4096) + 1n,
       centerIm: fixedFromDecimal('0.113008', 4096),
       span: fixedFromDecimal('1e-1000', 4096),
       precision: 4096,
     };
-    for (const base of ['http://localhost:4200/fractal', 'https://example.com/cuteness/fractal?other=1&position=old']) {
-      const link = positionLink(view, 3800, base);
-      const url = new URL(link);
-      expect(url.origin).toBe(new URL(base).origin);
-      expect(url.pathname).toBe(new URL(base).pathname);
-      expect(url.searchParams.get('other')).toBe(new URL(base).searchParams.get('other'));
-      expect(url.searchParams.getAll('position')).toHaveLength(1);
-      expect(parsePosition(link)).toEqual({ coordinates: view, maxIteration: 3800 });
+    const position = copyPosition(view, 3800);
+    for (const base of ['http://localhost:4200/', 'https://example.com/cuteness/']) {
+      const url = new URL(base);
+      url.hash = `/fractal?${new URLSearchParams({ other: '1', position })}`;
+      expect(parsePosition(url.href)).toEqual({ coordinates: view, maxIteration: 3800 });
+      url.searchParams.set('position', 'invalid');
+      expect(parsePosition(url.href)).toEqual({ coordinates: view, maxIteration: 3800 });
+      url.hash = '';
+      url.pathname += 'fractal';
+      url.searchParams.set('position', position);
+      expect(parsePosition(url.href)).toEqual({ coordinates: view, maxIteration: 3800 });
     }
   });
 
@@ -61,6 +64,8 @@ describe('fractal center coordinates', () => {
       'http://[invalid',
       'https://example.com/fractal',
       'https://example.com/fractal?position=invalid',
+      'https://example.com/cuteness/#/fractal?position=invalid',
+      'https://example.com/cuteness/#/fractal',
       ...[
         '0|2000|0|0|1',
         '1000000000|2000|0|0|1',

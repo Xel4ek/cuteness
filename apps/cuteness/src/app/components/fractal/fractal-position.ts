@@ -52,13 +52,6 @@ export function copyPosition(view: FractalView, maxIteration: number): string {
   return `fractal:1:${compressToEncodedURIComponent(data)}`;
 }
 
-export function positionLink(view: FractalView, maxIteration: number, href: string): string {
-  const url = new URL(href);
-  url.searchParams.set('position', copyPosition(view, maxIteration));
-
-  return url.href;
-}
-
 export function parsePosition(text: string): FractalPosition | undefined {
   if (text.length > 1000000) {
     return;
@@ -68,7 +61,10 @@ export function parsePosition(text: string): FractalPosition | undefined {
     if (!URL.canParse(text)) {
       return;
     }
-    text = new URL(text).searchParams.get('position') ?? '';
+    const url = new URL(text);
+    const queryStart = url.hash.indexOf('?');
+    const hashPosition = queryStart >= 0 ? new URLSearchParams(url.hash.slice(queryStart + 1)).get('position') : null;
+    text = hashPosition ?? url.searchParams.get('position') ?? '';
   }
   if (!text.startsWith('fractal:1:')) {
     return parseLegacyPosition(text);
