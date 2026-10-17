@@ -4,7 +4,7 @@ import { TsmResult } from '@cuteness/travelling-salesman-problem';
 
 import { GraphAlgorithmsComponent } from './graph-algorithms.component';
 import { GraphComponent } from './graph/graph.component';
-import { MatrixComponent } from './matrix/matrix.component';
+import { MatrixPreviewComponent } from './matrix-preview/matrix-preview.component';
 
 import { afterEach, beforeEach, it, expect, describe, vi } from 'vitest';
 
@@ -12,9 +12,10 @@ import { afterEach, beforeEach, it, expect, describe, vi } from 'vitest';
 class GraphStub {
   @Input() public adjacencyMatrix: number[][] = [];
   @Input() public solution: number[] = [];
+  public fitView = vi.fn();
 }
 
-@Component({ selector: 'cuteness-matrix', template: '' })
+@Component({ selector: 'cuteness-matrix-preview', template: '' })
 class MatrixStub {
   @Input() public adjacencyMatrix: number[][] = [];
   @Input() public solution: number[] = [];
@@ -68,7 +69,7 @@ describe('GraphAlgorithmsComponent', () => {
       imports: [GraphAlgorithmsComponent],
     })
       .overrideComponent(GraphAlgorithmsComponent, {
-        remove: { imports: [GraphComponent, MatrixComponent] },
+        remove: { imports: [GraphComponent, MatrixPreviewComponent] },
         add: { imports: [GraphStub, MatrixStub] },
       })
       .compileComponents();
@@ -85,6 +86,9 @@ describe('GraphAlgorithmsComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.querySelector('cuteness-graph')).not.toBeNull();
+    expect(root.querySelector<HTMLButtonElement>('[aria-label="Genetic"]')?.disabled).toBe(false);
   });
 
   it('keeps all four results on the same graph when changing algorithms', () => {
@@ -107,7 +111,7 @@ describe('GraphAlgorithmsComponent', () => {
     const matrices = worker.postMessage.mock.calls.map(([message]) => message.adjacencyMatrix);
     expect(matrices.every((matrix) => matrix === matrices[0])).toBe(true);
     expect(root.querySelector<HTMLInputElement>('input[type=range]')?.max).toBe('100');
-    expect(root.querySelector<HTMLInputElement>('input[type=range]')?.value).toBe('12');
+    expect(root.querySelector<HTMLInputElement>('input[type=range]')?.value).toBe('30');
   });
 
   it('selects a saved route without recalculating and retains unsuccessful attempts', () => {
@@ -134,7 +138,7 @@ describe('GraphAlgorithmsComponent', () => {
     click('Genetic');
     complete(workers[0], 200);
     click('Ants');
-    click('Run again');
+    click('Run Ants again');
     complete(workers[0], 90, 800, [0, 2, 1, 0]);
 
     const root: HTMLElement = fixture.nativeElement;
@@ -161,7 +165,10 @@ describe('GraphAlgorithmsComponent', () => {
     click('Generate');
     click('Little TS');
     const oldWorker = workers[0];
-    click('Stop');
+    const root: HTMLElement = fixture.nativeElement;
+    const stop = root.querySelector('[aria-label="Stop Little TS"]');
+    expect(stop?.closest('.algorithm-card')?.querySelector('[aria-label="Little TS"]')).not.toBeNull();
+    click('Stop Little TS');
 
     expect(oldWorker.terminate).toHaveBeenCalledOnce();
     expect(workers).toHaveLength(2);
@@ -169,7 +176,6 @@ describe('GraphAlgorithmsComponent', () => {
     complete(oldWorker, 999);
     complete(workers[1], 100);
 
-    const root: HTMLElement = fixture.nativeElement;
     expect(root.querySelectorAll('.algorithm-metrics')).toHaveLength(1);
     expect(root.querySelector('[aria-label="Genetic"]')?.textContent).toContain('100');
     expect(root.querySelector('[aria-label="Genetic"]')?.textContent).not.toContain('999');

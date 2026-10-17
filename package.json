@@ -12,6 +12,7 @@
   },
   "private": true,
   "dependencies": {
+    "3d-force-graph": "1.80.1",
     "@angular/animations": "22.1.8",
     "@angular/cdk": "22.1.8",
     "@angular/common": "22.1.8",
@@ -28,11 +29,10 @@
     "@cuteness/solar-system": "file:vendors/solar-system/pkg",
     "@ngrx/signals": "^22.0.1",
     "@nx/angular": "23.3.0",
-    "echarts": "^5.4.2",
     "es-toolkit": "1.52.0",
     "lz-string": "^1.5.0",
-    "ngx-echarts": "^16.0.0",
     "rxjs": "~7.8.0",
+    "three": "0.186.1",
     "tslib": "^2.3.0",
     "zone.js": "0.16.3"
   },
@@ -61,6 +61,7 @@
     "@swc/core": "1.16.2",
     "@swc/helpers": "0.5.23",
     "@types/node": "18.16.9",
+    "@types/three": "0.186.0",
     "@typescript-eslint/eslint-plugin": "8.71.1",
     "@typescript-eslint/parser": "8.71.1",
     "@typescript-eslint/utils": "8.71.1",

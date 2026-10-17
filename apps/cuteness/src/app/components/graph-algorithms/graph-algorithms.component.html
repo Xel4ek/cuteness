@@ -1,85 +1,113 @@
-<header class="page-heading">
-  <h1>Travelling salesman</h1>
-  @if (adjacencyMatrix.length) {
-    <span>{{ lastSize }} vertices · {{ graphChance * 100 | number: '.0-0' }}% fill</span>
-  }
-</header>
+<cuteness-graph #graph [adjacencyMatrix]="adjacencyMatrix" [solution]="solution?.vertices ?? []" />
 
 <section class="controls" aria-label="Graph settings">
+  <div class="graph-actions">
+    <button
+      mat-icon-button
+      aria-label="Generate"
+      matTooltip="Generate graph"
+      (click)="generateMatrix()"
+      [disabled]="processing"
+    >
+      <mat-icon>shuffle</mat-icon>
+    </button>
+    <button mat-icon-button aria-label="Fit graph to view" matTooltip="Fit graph to view" (click)="graph.fitView()">
+      <mat-icon>center_focus_strong</mat-icon>
+    </button>
+    <cuteness-matrix-preview [adjacencyMatrix]="adjacencyMatrix" [solution]="solution?.vertices ?? []" />
+  </div>
   <div class="slider-block">
     <label for="graph-size"
       >Vertices <strong>{{ size }}</strong></label
     >
-    <mat-slider [max]="100" [min]="3" [step]="1" [disabled]="processing">
-      <input id="graph-size" matSliderThumb [(ngModel)]="size" />
-    </mat-slider>
+    <input
+      id="graph-size"
+      type="range"
+      min="3"
+      max="100"
+      step="1"
+      [(ngModel)]="size"
+      [style.--range-fill]="((size - 3) / (100 - 3)) * 100 + '%'"
+      [disabled]="processing"
+    />
   </div>
   <div class="slider-block">
     <label for="graph-fill"
       >Fill <strong>{{ chance * 100 | number: '.0-0' }}%</strong></label
     >
-    <mat-slider [max]="1" [min]="0" [step]="0.01" [disabled]="processing">
-      <input id="graph-fill" matSliderThumb [(ngModel)]="chance" />
-    </mat-slider>
+    <input
+      id="graph-fill"
+      type="range"
+      min="0"
+      max="1"
+      step="0.01"
+      [(ngModel)]="chance"
+      [style.--range-fill]="chance * 100 + '%'"
+      [disabled]="processing"
+    />
   </div>
-  <button mat-flat-button (click)="generateMatrix()" [disabled]="processing">Generate</button>
 </section>
 
 <section class="algorithms" aria-label="Compare algorithms">
   @for (method of methods; track method.method) {
     @let run = resultFor(method);
-    <button
-      class="algorithm-button"
-      [class.selected]="!!run && selectedRun?.id === run.id"
-      [attr.aria-pressed]="!!run && selectedRun?.id === run.id"
-      [attr.aria-label]="method.title"
-      [attr.data-run-id]="run?.id"
-      (click)="chooseMethod(method)"
-      [disabled]="processing || !adjacencyMatrix.length"
-    >
-      <span>{{ method.title }}</span>
-      @if (run) {
-        <span class="algorithm-metrics">
-          <strong>{{ run.solution ? (run.solution.distance | number: '.0-2') : 'Not found' }}</strong>
-          <span>{{ formatTime(run.timeElapsed) }}</span>
-        </span>
-      } @else {
-        <span class="algorithm-hint">Run</span>
+    @let running = processing && pendingMethod?.method === method.method;
+    <article class="algorithm-card" [class.selected]="!!run && selectedRun?.id === run.id" [class.running]="running">
+      <button
+        class="algorithm-button"
+        [attr.aria-pressed]="!!run && selectedRun?.id === run.id"
+        [attr.aria-label]="method.title"
+        [attr.data-run-id]="run?.id"
+        (click)="chooseMethod(method)"
+        [disabled]="processing || !adjacencyMatrix.length"
+      >
+        <span>{{ method.title }}</span>
+        @if (running) {
+          <span class="algorithm-metrics" role="status">
+            <mat-spinner [diameter]="14" />
+            <span>{{ elapsedTime$ | async }}</span>
+          </span>
+        } @else if (run) {
+          <span class="algorithm-metrics">
+            <strong>{{ run.solution ? (run.solution.distance | number: '.0-2') : 'Not found' }}</strong>
+            <span>{{ formatTime(run.timeElapsed) }}</span>
+          </span>
+        } @else {
+          <mat-icon class="run-icon" aria-hidden="true">play_arrow</mat-icon>
+        }
+      </button>
+      @if (running) {
+        <button
+          class="algorithm-action"
+          mat-icon-button
+          [attr.aria-label]="'Stop ' + method.title"
+          matTooltip="Stop"
+          (click)="stop()"
+        >
+          <mat-icon>stop</mat-icon>
+        </button>
+      } @else if (run) {
+        <button
+          class="algorithm-action"
+          mat-icon-button
+          [attr.aria-label]="'Run ' + method.title + ' again'"
+          matTooltip="Run again"
+          [disabled]="processing"
+          (click)="solve(method)"
+        >
+          <mat-icon>refresh</mat-icon>
+        </button>
       }
-    </button>
+      @if (run?.solution; as result) {
+        <aside class="route-preview" [attr.aria-label]="method.title + ' route'">
+          <strong>Route</strong>
+          <p class="route">{{ result.vertices.join(' ➢ ') }}</p>
+          <span>{{ result.paths | number }} {{ method.counter }}</span>
+        </aside>
+      }
+    </article>
+  }
+  @if (statusMessage) {
+    <p class="status" role="status">{{ statusMessage }}</p>
   }
 </section>
-
-<div class="status" role="status" aria-live="polite">
-  @if (processing) {
-    <mat-spinner [diameter]="18"></mat-spinner>
-    <span>Calculating · {{ elapsedTime$ | async }}</span>
-    <button mat-button (click)="stop()">Stop</button>
-  } @else {
-    @if (statusMessage) {
-      <span>{{ statusMessage }}</span>
-    } @else if (selectedRun?.solution; as result) {
-      <span>{{ result.paths | number }} {{ selectedRun?.method?.counter }}</span>
-    }
-    @if (selectedRun) {
-      <button mat-button (click)="solve(selectedRun.method)">Run again</button>
-    }
-  }
-</div>
-
-@if (solution) {
-  <details class="route-panel">
-    <summary>Route</summary>
-    <p class="route">{{ solution.vertices.join(' ➢ ') }}</p>
-  </details>
-}
-
-@if (adjacencyMatrix.length) {
-  <div class="visualization">
-    <cuteness-graph [adjacencyMatrix]="adjacencyMatrix" [solution]="solution?.vertices ?? []" />
-  </div>
-  <details class="matrix-panel">
-    <summary>Adjacency matrix</summary>
-    <cuteness-matrix [adjacencyMatrix]="adjacencyMatrix" [solution]="solution?.vertices ?? []" />
-  </details>
-}

@@ -1,0 +1,23 @@
+<button
+  class="matrix-button"
+  mat-icon-button
+  aria-label="Preview or download adjacency matrix"
+  (focus)="preview.set(true)"
+  (click)="activate()"
+>
+  <mat-icon>grid_on</mat-icon>
+</button>
+@if (preview()) {
+  <section class="preview" aria-label="Adjacency matrix preview">
+    <header>
+      <span>Adjacency matrix</span>
+      <button mat-icon-button aria-label="Close matrix preview" (click)="preview.set(false)">
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+    <div class="matrix-container">
+      <cuteness-matrix [adjacencyMatrix]="adjacencyMatrix()" [solution]="solution()" />
+    </div>
+    <button mat-button (click)="download()">Download text</button>
+  </section>
+}

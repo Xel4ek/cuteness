@@ -1,1 +1,6 @@
-<div echarts [options]="chartOption" [merge]="mergeOptions" [style.height.%]="100" [style.width.%]="100"></div>
+<div #container class="graph-stage" aria-label="3D graph of travel costs"></div>
+@if (supported) {
+  <p class="navigation-hint">Drag to rotate · Scroll or pinch to zoom</p>
+} @else {
+  <p class="unsupported" role="status">This graph requires WebGL 2 support.</p>
+}

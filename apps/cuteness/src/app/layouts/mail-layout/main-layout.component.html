@@ -2,7 +2,7 @@
   <mat-drawer-content class="full-screen">
     <mat-toolbar color="primary" class="toolbar">
       <button mat-icon-button (click)="nav.toggle()"><mat-icon>menu</mat-icon></button>
-      <a mat-button class="mat-headline-5" [style.margin.px]="0" routerLink="/">Cuteness</a>
+      <a mat-button class="page-title" routerLink="/">{{ pageTitle() }}</a>
       <span class="filler"></span>
       <span class="info-block">
         @for (item of info$ | async | keyvalue: null; track $index) {

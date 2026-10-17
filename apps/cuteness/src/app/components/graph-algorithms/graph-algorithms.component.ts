@@ -1,14 +1,15 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { Route } from '@angular/router';
-import { MatSliderModule } from '@angular/material/slider';
 import { FormsModule } from '@angular/forms';
 import { GraphHelper, TsmResult } from '@cuteness/travelling-salesman-problem';
 import { animationFrameScheduler, interval, map, Observable, takeWhile } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { GraphComponent } from './graph/graph.component';
-import { MatrixComponent } from './matrix/matrix.component';
+import { MatrixPreviewComponent } from './matrix-preview/matrix-preview.component';
 
 interface Method {
   title: string;
@@ -28,24 +29,23 @@ interface RunResult {
   imports: [
     CommonModule,
     MatButtonModule,
-    MatSliderModule,
     FormsModule,
     MatProgressSpinnerModule,
+    MatIconModule,
+    MatTooltipModule,
     GraphComponent,
-    MatrixComponent,
+    MatrixPreviewComponent,
   ],
   templateUrl: './graph-algorithms.component.html',
   styleUrls: ['./graph-algorithms.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GraphAlgorithmsComponent implements OnDestroy {
+export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
 
   protected adjacencyMatrix: number[][] = [];
   protected solution?: TsmResult | null;
-  protected size = 12;
-  protected lastSize = 0;
-  protected graphChance = 0.5;
+  protected size = 30;
   protected chance = 0.5;
   protected readonly methods: Method[] = [
     {
@@ -74,27 +74,29 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   protected selectedRun?: RunResult;
   protected statusMessage?: string;
   protected processing = false;
+  protected pendingMethod?: Method;
   protected elapsedTime$: Observable<string> = interval(213, animationFrameScheduler).pipe(
     map(() => this.formatTime(performance.now() - this.startTime)),
     takeWhile(() => this.processing),
   );
 
   private worker: Worker = this.createWorker();
-  private pendingMethod?: Method;
   private nextRunId = 1;
   private startTime = 0;
+
+  public ngOnInit(): void {
+    this.generateMatrix();
+  }
 
   public ngOnDestroy(): void {
     this.worker.terminate();
   }
 
-  protected generateMatrix() {
+  protected generateMatrix(): void {
     if (this.processing) {
       return;
     }
 
-    this.lastSize = this.size;
-    this.graphChance = this.chance;
     this.adjacencyMatrix = GraphHelper.generateDirectedAdjacencyMatrix(this.size, this.chance);
     this.solution = undefined;
     this.results = [];
@@ -102,7 +104,7 @@ export class GraphAlgorithmsComponent implements OnDestroy {
     this.statusMessage = undefined;
   }
 
-  protected solve(method: Method) {
+  protected solve(method: Method): void {
     if (this.processing || !this.adjacencyMatrix.length) {
       return;
     }
@@ -114,17 +116,17 @@ export class GraphAlgorithmsComponent implements OnDestroy {
     this.worker.postMessage({ adjacencyMatrix: this.adjacencyMatrix, method: method.method });
   }
 
-  protected selectRun(run: RunResult) {
+  protected selectRun(run: RunResult): void {
     this.selectedRun = run;
     this.solution = run.solution;
     this.statusMessage = undefined;
   }
 
-  protected resultFor(method: Method) {
+  protected resultFor(method: Method): RunResult | undefined {
     return this.results.find((run) => run.method.method === method.method);
   }
 
-  protected chooseMethod(method: Method) {
+  protected chooseMethod(method: Method): void {
     if (this.processing) {
       return;
     }
@@ -137,7 +139,7 @@ export class GraphAlgorithmsComponent implements OnDestroy {
     }
   }
 
-  protected stop() {
+  protected stop(): void {
     this.worker.terminate();
     this.worker = this.createWorker();
     this.processing = false;
@@ -145,7 +147,7 @@ export class GraphAlgorithmsComponent implements OnDestroy {
     this.statusMessage = 'Calculation stopped.';
   }
 
-  protected formatTime(time: number) {
+  protected formatTime(time: number): string {
     return `${(time / 1000).toFixed(3)} s`;
   }
 
@@ -182,4 +184,4 @@ export class GraphAlgorithmsComponent implements OnDestroy {
   }
 }
 
-export default [{ path: '', component: GraphAlgorithmsComponent }] as Route[];
+export default [{ path: '', title: 'Travelling salesman', component: GraphAlgorithmsComponent }] as Route[];

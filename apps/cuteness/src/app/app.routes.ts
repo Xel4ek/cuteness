@@ -10,6 +10,7 @@ const routes: Route[] = [
   },
   {
     path: 'fractal',
+    title: 'Fractal',
     loadComponent: () => import('./components/fractal/fractal.component'),
   },
   {
@@ -18,10 +19,12 @@ const routes: Route[] = [
   },
   {
     path: 'solar-system',
+    title: 'Solar system',
     loadComponent: () => import('./components/solar-system/solar-system.component'),
   },
   {
     path: 'opfs',
+    title: 'File storage',
     loadComponent: () => import('./components/opfs/opfs.component'),
   },
   { path: '**', redirectTo: '' },

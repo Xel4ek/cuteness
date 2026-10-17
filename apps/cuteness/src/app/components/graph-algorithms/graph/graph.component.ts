@@ -1,142 +1,174 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
-import { EChartsOption } from 'echarts';
-import { NGX_ECHARTS_CONFIG, NgxEchartsModule } from 'ngx-echarts';
-import { GraphEdgeItemOption, GraphNodeItemOption } from 'echarts/types/src/chart/graph/GraphSeries';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  NgZone,
+  OnDestroy,
+  inject,
+  input,
+  viewChild,
+} from '@angular/core';
+import { signalMethod } from '@ngrx/signals';
+import ForceGraph3D, { ForceGraph3DInstance, LinkObject, NodeObject } from '3d-force-graph';
+import WebGL from 'three/addons/capabilities/WebGL.js';
+import { layoutByCost } from './graph-layout';
+
+interface City extends NodeObject {
+  id: string;
+}
+
+interface Road extends LinkObject<City> {
+  key: string;
+  label: string;
+  cost: number;
+  selected: boolean;
+  curvature: number;
+}
 
 @Component({
   selector: 'cuteness-graph[adjacencyMatrix]',
   templateUrl: './graph.component.html',
   styleUrls: ['./graph.component.scss'],
-  imports: [NgxEchartsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [
-    {
-      provide: NGX_ECHARTS_CONFIG,
-      useFactory: () => ({ echarts: () => import('echarts') }),
-    },
-  ],
 })
-export class GraphComponent {
-  protected links: GraphEdgeItemOption[] = [];
-  protected mergeOptions: EChartsOption = {};
-  protected nodes: GraphNodeItemOption[] = [];
+export class GraphComponent implements AfterViewInit, OnDestroy {
+  public readonly adjacencyMatrix = input.required<number[][]>();
+  public readonly solution = input<number[]>([]);
 
-  protected chartOption: EChartsOption = {
-    tooltip: {},
-    series: [
-      {
-        name: 'Les Miserables',
-        type: 'graph',
-        layout: 'circular',
-        animationDurationUpdate: 1500,
-        animationEasingUpdate: 'quinticInOut',
-        data: this.nodes,
-        links: this.links,
-        roam: true,
-        label: {
-          position: 'right',
-        },
-        lineStyle: {
-          curveness: 0.1,
-        },
-        emphasis: {
-          focus: 'adjacency',
-        },
-      },
-    ],
-  };
+  protected readonly supported = WebGL.isWebGL2Available();
 
-  private _adjacencyMatrix: number[][] = [];
+  private readonly container = viewChild.required<ElementRef<HTMLDivElement>>('container');
+  private readonly injector = inject(Injector);
+  private readonly zone = inject(NgZone);
+  private graph?: ForceGraph3DInstance;
+  private resizeObserver?: ResizeObserver;
+  private visibilityObserver?: IntersectionObserver;
+  private fittingFrame?: number;
+  private matrix?: number[][];
+  private data: { nodes: City[]; links: Road[] } = { nodes: [], links: [] };
 
-  public get adjacencyMatrix(): number[][] {
-    return this._adjacencyMatrix;
-  }
+  private readonly update = signalMethod<{ matrix: number[][]; solution: number[] }>(({ matrix, solution }) =>
+    this.zone.runOutsideAngular(() => this.updateGraph(matrix, solution)),
+  );
 
-  @Input()
-  public set adjacencyMatrix(adjacencyMatrix: number[][]) {
-    this._adjacencyMatrix = adjacencyMatrix;
-    this.generate();
-    this.chartOption = { ...this.chartOption };
-  }
-
-  private _solution: number[] = [];
-
-  public get solution() {
-    return this._solution;
-  }
-
-  @Input()
-  public set solution(solution: number[] | undefined) {
-    if (Array.isArray(solution)) {
-      this._solution = solution;
-      this.processLinks();
+  public ngAfterViewInit(): void {
+    if (!this.supported) {
+      return;
     }
-  }
-
-  private generate() {
-    this.links.length = 0;
-    this.nodes.length = 0;
-
-    for (let i = 0; i < this.adjacencyMatrix.length; i++) {
-      this.nodes.push({
-        id: i.toString(),
-        name: `${i}`,
+    this.zone.runOutsideAngular(() => {
+      const container = this.container().nativeElement;
+      this.graph = new ForceGraph3D(container, {
+        controlType: 'orbit',
+        rendererConfig: { antialias: true },
       });
-    }
+      this.graph
+        .width(container.clientWidth)
+        .height(container.clientHeight)
+        .backgroundColor('#25252c')
+        .showNavInfo(false)
+        .nodeLabel((node) => `City ${node.id}`)
+        .nodeColor(() => '#9b8ee0')
+        .nodeOpacity(1)
+        .nodeRelSize(3)
+        .linkLabel('label')
+        .linkOpacity(1)
+        .linkCurvature('curvature')
+        .linkDirectionalArrowRelPos(0.9)
+        .linkDirectionalArrowResolution(4)
+        .enableNodeDrag(false)
+        .cooldownTicks(0);
 
-    for (let i = 0; i < this.adjacencyMatrix.length; i++) {
-      for (let j = 0; j < this.adjacencyMatrix[i].length; j++) {
-        if (this.adjacencyMatrix[i][j] > 0) {
-          this.links.push({
-            source: i.toString(),
-            target: j.toString(),
-            symbol: ['none', 'arrow'],
-            label: {
-              formatter: this.adjacencyMatrix[i][j].toString(),
-            },
-            value: this.adjacencyMatrix[i][j],
-          });
+      this.resizeObserver = new ResizeObserver(([entry]) => {
+        this.graph?.width(entry.contentRect.width).height(entry.contentRect.height);
+      });
+      this.resizeObserver.observe(container);
+      this.visibilityObserver = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) {
+          this.graph?.resumeAnimation();
+        } else {
+          this.graph?.pauseAnimation();
         }
-      }
-    }
+      });
+      this.visibilityObserver.observe(container);
+    });
+    this.update(() => ({ matrix: this.adjacencyMatrix(), solution: this.solution() }), { injector: this.injector });
   }
 
-  private processLinks() {
-    const links: GraphEdgeItemOption[] = this.links.map((link) => ({
-      ...link,
-      lineStyle: {
-        ...link.lineStyle,
-        opacity: 0.1,
-        color: 'rgb(173,173,173)',
-      },
-    }));
+  public ngOnDestroy(): void {
+    this.resizeObserver?.disconnect();
+    this.visibilityObserver?.disconnect();
+    if (this.fittingFrame !== undefined) {
+      cancelAnimationFrame(this.fittingFrame);
+    }
+    const renderer = this.graph?.renderer();
+    this.graph?._destructor();
+    renderer?.forceContextLoss();
+  }
 
-    if (this.solution) {
-      for (let i = 0; i < this.solution.length - 1; i++) {
-        const source = this.solution[i].toString();
-        const target = this.solution[i + 1].toString();
+  public fitView(): void {
+    this.graph?.zoomToFit(300, 30);
+  }
 
-        this.links.forEach((link) => {
-          if (link.source === source && link.target === target) {
+  private updateGraph(matrix: number[][], solution: number[]): void {
+    const graph = this.graph;
+    if (!graph) {
+      return;
+    }
+    if (this.matrix !== matrix) {
+      this.matrix = matrix;
+      const positions = layoutByCost(matrix);
+      const nodes = positions.map(({ x, y, z }, index) => ({
+        id: index.toString(),
+        x: x * 120,
+        y: y * 120,
+        z: z * 120,
+        fx: x * 120,
+        fy: y * 120,
+        fz: z * 120,
+      }));
+      const links: Road[] = [];
+      for (let from = 0; from < matrix.length; from++) {
+        for (let to = 0; to < matrix.length; to++) {
+          const cost = matrix[from][to];
+          if (cost > 0 && Number.isFinite(cost)) {
             links.push({
-              ...link,
-              lineStyle: {
-                ...link.lineStyle,
-                opacity: 1,
-                color: '#179809',
-              },
+              source: from.toString(),
+              target: to.toString(),
+              cost,
+              key: `${from}:${to}`,
+              label: `${from} → ${to} · ${cost}`,
+              curvature: matrix[to][from] > 0 ? 0.15 : 0,
+              selected: false,
             });
           }
-        });
+        }
       }
+      this.data = { nodes, links };
+      if (this.fittingFrame !== undefined) {
+        cancelAnimationFrame(this.fittingFrame);
+        this.fittingFrame = undefined;
+      }
+      graph.onEngineStop(() => {
+        // The engine-stop callback precedes the library's first update of mesh positions.
+        this.fittingFrame = requestAnimationFrame(() => {
+          this.fittingFrame = undefined;
+          graph.zoomToFit(0, 30);
+        });
+        graph.onEngineStop(() => undefined);
+      });
+      graph.graphData(this.data);
     }
-
-    this.mergeOptions = {
-      series: [
-        {
-          links,
-        },
-      ],
-    };
+    const route = new Set(solution.slice(1).map((to, index) => `${solution[index]}:${to}`));
+    for (const link of this.data.links) {
+      link.selected = route.has(link.key);
+    }
+    const selected = new Set<LinkObject>(this.data.links.filter((link) => link.selected));
+    graph
+      .linkColor((link) => (selected.has(link) ? '#70e0a0' : 'rgba(175,175,200,0.06)'))
+      .linkWidth((link) => (selected.has(link) ? 0.8 : 0))
+      .linkDirectionalArrowLength((link) => (selected.has(link) ? 8 : 1.5))
+      .linkDirectionalArrowColor((link) => (selected.has(link) ? '#70e0a0' : 'rgba(175,175,200,0.12)'));
   }
 }

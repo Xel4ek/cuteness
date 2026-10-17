@@ -1,0 +1,38 @@
+:host {
+  display: block;
+  position: relative;
+}
+
+.matrix-button {
+  color: white;
+}
+
+.preview {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  width: min(560px, calc(100vw - 1.5rem));
+  max-height: min(60dvh, calc(100dvh - 16rem));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 10px;
+  background: #1e1e25;
+  color: white;
+  font-size: 0.8125rem;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 0.5rem;
+}
+
+.matrix-container {
+  min-height: 0;
+  overflow: auto;
+}

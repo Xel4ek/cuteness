@@ -3,9 +3,9 @@
 </button>
 <div class="table-content">
   <table>
-    @for (row of adjacencyMatrix; track row; let i = $index) {
+    @for (row of adjacencyMatrix; track $index; let i = $index) {
       <tr>
-        @for (cell of row; track cell; let j = $index) {
+        @for (cell of row; track $index; let j = $index) {
           <td class="cell" [class.used]="inSolution(i, j)">
             <span [matTooltip]="(cell | number) ?? ''" [class.infinity]="cell === 0">
               {{ cell | number | replaceZeroWithInfinity }}
