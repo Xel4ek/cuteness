@@ -1,29 +1,70 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Clipboard } from '@angular/cdk/clipboard';
+import { By } from '@angular/platform-browser';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import FractalComponent from './fractal.component';
 import { MandelbrotWorkerCommand } from './worker/mandelbrot-worker-command';
 import { WorkerEvent } from './worker/worker-event';
+import { fixedFromDecimal, fixedToNumber } from './fractal-viewport';
+import { IterationControlComponent } from './iteration-control/iteration-control.component';
+import { MainLayoutHeaderService } from '../../layouts/mail-layout/main-layout-header.service';
+import { MandelbrotWorkerResult } from './worker/mandelbrot-worker-result';
+import { parsePosition, positionLink } from './fractal-position';
 
 class WorkerStub {
-  public postMessage = vi.fn<(message: MandelbrotWorkerCommand, transfer?: Transferable[]) => void>();
+  public onmessage: ((event: MessageEvent<MandelbrotWorkerResult>) => void) | null = null;
+  public autoComplete = true;
+  public postMessage = vi.fn<(message: MandelbrotWorkerCommand, transfer?: Transferable[]) => void>(() => {
+    if (this.autoComplete) this.complete();
+  });
   public terminate = vi.fn();
+
+  public complete(renderTimeMs = 0): ImageBitmap {
+    const image: ImageBitmap = { width: 400, height: 299, close: vi.fn() };
+    this.onmessage?.(
+      new MessageEvent('message', {
+        data: {
+          type: 'rendered',
+          referenceCount: 1,
+          referencesBuilt: 1,
+          renderTimeMs,
+          image,
+        } satisfies MandelbrotWorkerResult,
+      }),
+    );
+
+    return image;
+  }
 }
 
 describe('fractal navigation', () => {
   let fixture: ComponentFixture<FractalComponent>;
   let canvas: HTMLCanvasElement;
   let worker: WorkerStub;
-  let transferDescriptor: PropertyDescriptor | undefined;
+  let initialSpan: number;
+  let originalHref: string;
+
+  function rendered(renderTimeMs: number) {
+    const image = worker.complete(renderTimeMs);
+    fixture.detectChanges();
+
+    return image;
+  }
 
   function coordinates() {
     const message = worker.postMessage.mock.calls
       .map(([value]) => value)
-      .findLast((value) => value.type === WorkerEvent.coordinates);
-    if (!message || message.type !== WorkerEvent.coordinates) {
+      .findLast((value) => value.type === WorkerEvent.render || value.type === WorkerEvent.init);
+    if (!message) {
       throw new Error('Expected a coordinate update');
     }
 
-    return message.coordinates;
+    const view = message.coordinates;
+    const span = fixedToNumber(view.span, view.precision);
+    const centerRe = fixedToNumber(view.centerRe, view.precision);
+    const centerIm = fixedToNumber(view.centerIm, view.precision);
+
+    return { leftBound: centerRe - span / 2, rightBound: centerRe + span / 2, topBound: centerIm - (span * 299) / 800 };
   }
 
   function mouse(type: string, x = 0, y = 0, button = 0, shiftKey = false) {
@@ -60,7 +101,17 @@ describe('fractal navigation', () => {
   }
 
   beforeEach(async () => {
+    originalHref = window.location.href;
     worker = new WorkerStub();
+    vi.stubGlobal(
+      'OffscreenCanvas',
+      class {
+        constructor(
+          public width: number,
+          public height: number,
+        ) {}
+      },
+    );
     vi.stubGlobal(
       'Worker',
       class {
@@ -69,34 +120,248 @@ describe('fractal navigation', () => {
         }
       },
     );
-    // jsdom does not implement canvas rendering, transfer, or layout.
+    // jsdom does not implement canvas rendering or layout.
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 400, 300));
     vi.spyOn(HTMLCanvasElement.prototype, 'offsetWidth', 'get').mockReturnValue(400);
     vi.spyOn(document.body, 'clientWidth', 'get').mockReturnValue(400);
     vi.spyOn(document.body, 'clientHeight', 'get').mockReturnValue(365);
-    transferDescriptor = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, 'transferControlToOffscreen');
-    Object.defineProperty(HTMLCanvasElement.prototype, 'transferControlToOffscreen', {
-      configurable: true,
-      value: () => ({ width: 400, height: 299 }),
-    });
 
     await TestBed.configureTestingModule({ imports: [FractalComponent] }).compileComponents();
     fixture = TestBed.createComponent(FractalComponent);
     fixture.detectChanges();
     canvas = fixture.nativeElement.querySelector('canvas[cutenessSelectArea]');
     mouse('contextmenu', 0, 0, 2);
+    const initial = coordinates();
+    initialSpan = initial.rightBound - initial.leftBound;
   });
 
   afterEach(() => {
     fixture.destroy();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-    if (transferDescriptor) {
-      Object.defineProperty(HTMLCanvasElement.prototype, 'transferControlToOffscreen', transferDescriptor);
-    } else {
-      Reflect.deleteProperty(HTMLCanvasElement.prototype, 'transferControlToOffscreen');
-    }
+    window.history.replaceState(null, '', originalHref);
+  });
+
+  it('shows the current center and copies a full link to its coordinates, zoom and iterations', () => {
+    const clipboard = TestBed.inject(Clipboard);
+    const copy = vi.spyOn(clipboard, 'copy').mockReturnValue(true);
+    mouse('mousedown', 100, 100);
+    mouse('mousemove', 140, 120);
+    mouse('mouseup', 140, 120);
+    const requested = worker.postMessage.mock.calls.at(-1)?.[0].coordinates;
+    expect(requested).toBeDefined();
+    const button = fixture.nativeElement.querySelector('[data-testid="fractal-center"]') as HTMLButtonElement;
+    expect(button.textContent).toContain('Re');
+    expect(button.textContent).toContain('Im');
+    button.click();
+    fixture.detectChanges();
+    const text = copy.mock.calls[0][0];
+    expect(new URL(text).origin).toBe(window.location.origin);
+    expect(new URL(text).searchParams.get('position')).toMatch(/^fractal:1:/);
+    expect(parsePosition(text)).toEqual({ coordinates: requested, maxIteration: 2000 });
+    expect(text).not.toContain('…');
+    expect(button.getAttribute('aria-label')).toBe('Fractal link copied');
+    wheel(-100);
+    expect(button.getAttribute('aria-label')).toBe('Copy fractal link');
+  });
+
+  it('reads the link once before the first frame and preserves subsequent user navigation', () => {
+    const view = {
+      centerRe: fixedFromDecimal('-0.74', 128),
+      centerIm: fixedFromDecimal('0.12', 128),
+      span: fixedFromDecimal('0.00003', 128),
+      precision: 128,
+    };
+    window.history.replaceState(null, '', positionLink(view, 3800, window.location.href));
+    fixture.destroy();
+    worker.postMessage.mockClear();
+    fixture = TestBed.createComponent(FractalComponent);
+    fixture.detectChanges();
+    canvas = fixture.nativeElement.querySelector('canvas[cutenessSelectArea]');
+    expect(worker.postMessage.mock.calls[0][0].coordinates).toEqual(view);
+    expect(worker.postMessage.mock.calls[0][0].maxIteration).toBe(3800);
+    expect(worker.postMessage).toHaveBeenCalledOnce();
+    const link = window.location.href;
+    wheel(-100);
+    expect(window.location.href).toBe(link);
+    const moved = worker.postMessage.mock.calls.at(-1)?.[0].coordinates;
+    expect(moved).not.toEqual(view);
+    window.history.replaceState(null, '', positionLink(view, 4200, link));
+    fixture.detectChanges();
+    expect(worker.postMessage.mock.calls.at(-1)?.[0].coordinates).toEqual(moved);
+    expect(worker.postMessage.mock.calls.at(-1)?.[0].maxIteration).toBe(3800);
+  });
+
+  it('pastes coordinates, zoom and iterations from a right-click on the canvas or panel', async () => {
+    const clipboard = { readText: vi.fn() };
+    vi.stubGlobal('navigator', { clipboard });
+    const view = {
+      centerRe: fixedFromDecimal('-0.74', 128),
+      centerIm: fixedFromDecimal('0.12', 128),
+      span: fixedFromDecimal('0.00003', 128),
+      precision: 128,
+    };
+    clipboard.readText.mockResolvedValue(positionLink(view, 4200, window.location.href));
+    const control = fixture.debugElement
+      .query(By.directive(IterationControlComponent))
+      .injector.get(IterationControlComponent);
+    control.value.set(3800);
+    fixture.detectChanges();
+    const before = worker.postMessage.mock.calls.length;
+    const button = fixture.nativeElement.querySelector('[data-testid="fractal-center"]') as HTMLButtonElement;
+    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 });
+    button.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(worker.postMessage).toHaveBeenCalledTimes(before);
+    await Promise.resolve();
+    fixture.detectChanges();
+    expect(worker.postMessage.mock.calls.at(-1)?.[0].coordinates).toEqual(view);
+    expect(worker.postMessage.mock.calls.at(-1)?.[0].maxIteration).toBe(4200);
+    expect(control.value()).toBe(4200);
+    expect(fixture.nativeElement.querySelector('[role="status"]').textContent).toContain('Position pasted');
+    wheel(-100);
+    mouse('contextmenu', 100, 150, 2);
+    await Promise.resolve();
+    fixture.detectChanges();
+    expect(worker.postMessage.mock.calls.at(-1)?.[0].coordinates).toEqual(view);
+  });
+
+  it('pastes legacy coordinates without changing the current iteration setting', async () => {
+    vi.stubGlobal('navigator', {
+      clipboard: { readText: vi.fn().mockResolvedValue('Re: -0.74\nIm: 0.12\nZoom: 1000\nPrecision: 128') },
+    });
+    const control = fixture.debugElement
+      .query(By.directive(IterationControlComponent))
+      .injector.get(IterationControlComponent);
+    control.value.set(3800);
+    fixture.detectChanges();
+    mouse('contextmenu', 100, 150, 2);
+    await Promise.resolve();
+    fixture.detectChanges();
+    expect(worker.postMessage.mock.calls.at(-1)?.[0].maxIteration).toBe(3800);
+    expect(worker.postMessage.mock.calls.at(-1)?.[0].coordinates.centerRe).toBe(fixedFromDecimal('-0.74', 128));
+  });
+
+  it('restores the starting view when the clipboard is empty, invalid or inaccessible', async () => {
+    const clipboard = { readText: vi.fn().mockResolvedValue('unrelated text') };
+    vi.stubGlobal('navigator', { clipboard });
+    const initial = worker.postMessage.mock.calls[0][0].coordinates;
+    const paste = async () => {
+      wheel(-100);
+      expect(worker.postMessage.mock.calls.at(-1)?.[0].coordinates).not.toEqual(initial);
+      mouse('contextmenu', 100, 150, 2);
+      await Promise.resolve();
+      fixture.detectChanges();
+      expect(worker.postMessage.mock.calls.at(-1)?.[0].coordinates).toEqual(initial);
+    };
+    await paste();
+    expect(fixture.nativeElement.querySelector('[role="status"]').textContent).toContain('Starting view restored');
+    clipboard.readText.mockResolvedValue('');
+    await paste();
+    clipboard.readText.mockRejectedValue(new DOMException('Denied', 'NotAllowedError'));
+    await paste();
+    expect(fixture.nativeElement.querySelector('[role="status"]').textContent).toContain('Allow clipboard access');
+  });
+
+  it('sends iteration signals to the worker after initialization and preserves them during navigation', () => {
+    const control = fixture.debugElement
+      .query(By.directive(IterationControlComponent))
+      .injector.get(IterationControlComponent);
+    const settings = () =>
+      worker.postMessage.mock.calls.map(([message]) => message).map((message) => message.maxIteration);
+    expect(worker.postMessage.mock.calls[0][0].type).toBe(WorkerEvent.init);
+    expect(settings()).toEqual([2000]);
+    control.value.set(3200);
+    fixture.detectChanges();
+    expect(settings().at(-1)).toBe(3200);
+    mouse('contextmenu', 0, 0, 2);
+    expect(control.value()).toBe(3200);
+    expect(settings()).toHaveLength(2);
+  });
+
+  it('shows slow frame times and removes them when the next frame is fast', () => {
+    const header = TestBed.inject(MainLayoutHeaderService).getHeaderInfo();
+    worker.autoComplete = false;
+    wheel(-100);
+    rendered(240);
+    expect(header.value['render']).toBe('240 ms');
+    expect(header.value['zoom']).toBeTruthy();
+    wheel(-100);
+    rendered(1250);
+    expect(header.value['render']).toBe('1.25 s');
+    wheel(-100);
+    rendered(100);
+    expect(header.value['render']).toBeUndefined();
+  });
+
+  it('clears the duration for a new view or settings and ignores obsolete frame results', () => {
+    const header = TestBed.inject(MainLayoutHeaderService).getHeaderInfo();
+    worker.autoComplete = false;
+    wheel(-100);
+    rendered(500);
+    wheel(-200);
+    expect(header.value['render']).toBeUndefined();
+    wheel(-100);
+    rendered(900);
+    expect(header.value['render']).toBeUndefined();
+    rendered(300);
+    expect(header.value['render']).toBe('300 ms');
+    const control = fixture.debugElement
+      .query(By.directive(IterationControlComponent))
+      .injector.get(IterationControlComponent);
+    control.value.set(3200);
+    fixture.detectChanges();
+    expect(header.value['render']).toBeUndefined();
+  });
+
+  it('finishes one frame and then requests only the latest accumulated view and settings', () => {
+    worker.autoComplete = false;
+    wheel(-100);
+    const activeCount = worker.postMessage.mock.calls.length;
+    const activeView = worker.postMessage.mock.calls.at(-1)?.[0].coordinates;
+    wheel(-100);
+    wheel(-100);
+    const control = fixture.debugElement
+      .query(By.directive(IterationControlComponent))
+      .injector.get(IterationControlComponent);
+    control.value.set(3200);
+    fixture.detectChanges();
+    expect(worker.postMessage).toHaveBeenCalledTimes(activeCount);
+    const image = rendered(200);
+    expect(worker.postMessage).toHaveBeenCalledTimes(activeCount + 1);
+    const latest = worker.postMessage.mock.calls.at(-1)?.[0];
+    expect(latest?.coordinates.span).toBeLessThan(activeView?.span ?? 0n);
+    expect(latest?.maxIteration).toBe(3200);
+    expect(image.close).not.toHaveBeenCalled();
+    rendered(150);
+    expect(worker.postMessage).toHaveBeenCalledTimes(activeCount + 1);
+    expect(image.close).toHaveBeenCalledOnce();
+  });
+
+  it('does not render again when pending navigation returns to the view already being calculated', () => {
+    wheel(-100);
+    worker.autoComplete = false;
+    mouse('contextmenu');
+    const count = worker.postMessage.mock.calls.length;
+    wheel(-100);
+    mouse('contextmenu');
+    rendered(200);
+    expect(worker.postMessage).toHaveBeenCalledTimes(count);
+  });
+
+  it('releases rejected and replaced bitmaps and closes the retained frame on destruction', () => {
+    worker.autoComplete = false;
+    wheel(-100);
+    const first = rendered(200);
+    const stale = rendered(300);
+    expect(stale.close).toHaveBeenCalledOnce();
+    wheel(-100);
+    const second = rendered(200);
+    expect(first.close).toHaveBeenCalledOnce();
+    fixture.destroy();
+    expect(second.close).toHaveBeenCalledOnce();
+    expect(worker.terminate).toHaveBeenCalledOnce();
   });
 
   it('selects a zoom rectangle with Shift and preserves right-click reset', () => {
@@ -104,8 +369,8 @@ describe('fractal navigation', () => {
     mouse('mousedown', 100, 100, 0, true);
     mouse('mousemove', 300, 150);
     mouse('mouseup', 300, 150);
-    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(1.5);
-    expect(coordinates().leftBound).toBeCloseTo(-1.25);
+    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(initialSpan / 2, 10);
+    expect(coordinates().leftBound).toBeCloseTo(initial.leftBound + initialSpan / 4, 10);
     mouse('contextmenu', 0, 0, 2);
     expect(coordinates()).toEqual(initial);
   });
@@ -117,19 +382,19 @@ describe('fractal navigation', () => {
     expect(coordinates()).toEqual(initial);
     mouse('mousedown', 100, 100, 0, true);
     mouse('mouseup', 300, 150);
-    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(1.5);
+    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(initialSpan / 2, 10);
     mouse('dblclick', 100, 100);
     expect(coordinates()).toEqual(initial);
   });
 
   it('zooms in and out with the wheel while keeping the point under the cursor fixed', () => {
     const initial = coordinates();
-    const anchorX = initial.leftBound + (100 * 3) / 400;
-    const anchorY = initial.topBound + (150 * 3) / 400;
+    const anchorX = initial.leftBound + (100 * initialSpan) / 400;
+    const anchorY = initial.topBound + (150 * initialSpan) / 400;
     const event = wheel(-100);
     const zoomed = coordinates();
     const span = zoomed.rightBound - zoomed.leftBound;
-    expect(span).toBeLessThan(3);
+    expect(span).toBeLessThan(initialSpan);
     expect(zoomed.leftBound + (100 * span) / 400).toBeCloseTo(anchorX, 10);
     expect(zoomed.topBound + (150 * span) / 400).toBeCloseTo(anchorY, 10);
     expect(event.defaultPrevented).toBe(true);
@@ -158,12 +423,12 @@ describe('fractal navigation', () => {
 
   it('limits wheel zoom-out to 0.5x while preserving the anchor and allowing zoom-in again', () => {
     const initial = coordinates();
-    const anchorX = initial.leftBound + (100 * 3) / 400;
-    const anchorY = initial.topBound + (150 * 3) / 400;
-    wheel(10000);
-    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(6);
-    expect(coordinates().leftBound + (100 * 6) / 400).toBeCloseTo(anchorX);
-    expect(coordinates().topBound + (150 * 6) / 400).toBeCloseTo(anchorY);
+    const anchorX = initial.leftBound + (100 * initialSpan) / 400;
+    const anchorY = initial.topBound + (150 * initialSpan) / 400;
+    for (let i = 0; i < 10; i++) wheel(10000);
+    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(6, 10);
+    expect(coordinates().leftBound + (100 * 6) / 400).toBeCloseTo(anchorX, 10);
+    expect(coordinates().topBound + (150 * 6) / 400).toBeCloseTo(anchorY, 10);
     const minimum = coordinates();
     wheel(10000);
     expect(coordinates()).toEqual(minimum);
@@ -172,39 +437,43 @@ describe('fractal navigation', () => {
   });
 
   it('applies the same 0.5x zoom-out limit to pinch gestures', () => {
-    touch('touchstart', [
-      [50, 100],
-      [250, 100],
-    ]);
-    touch('touchmove', [
-      [140, 100],
-      [160, 100],
-    ]);
-    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(6);
+    for (let i = 0; i < 4; i++) {
+      touch('touchstart', [
+        [50, 100],
+        [250, 100],
+      ]);
+      touch('touchmove', [
+        [140, 100],
+        [160, 100],
+      ]);
+      touch('touchend', []);
+    }
+    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(6, 10);
   });
 
   it('pans with the mouse by default without changing zoom or selecting a rectangle', () => {
     const initial = coordinates();
     mouse('mousedown', 100, 100);
     mouse('mousemove', 120, 130);
-    expect(coordinates().leftBound).toBeCloseTo(initial.leftBound - (20 * 3) / 400);
-    expect(coordinates().topBound).toBeCloseTo(initial.topBound - (30 * 3) / 400);
-    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(3);
+    expect(coordinates().leftBound).toBeCloseTo(initial.leftBound - (20 * initialSpan) / 400, 10);
+    expect(coordinates().topBound).toBeCloseTo(initial.topBound - (30 * initialSpan) / 400, 10);
+    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(initialSpan, 10);
     mouse('mousemove', 140, 140);
     mouse('mouseup', 140, 140);
     const panned = coordinates();
-    expect(panned.leftBound).toBeCloseTo(initial.leftBound - (40 * 3) / 400);
-    expect(panned.rightBound - panned.leftBound).toBeCloseTo(3);
+    expect(panned.leftBound).toBeCloseTo(initial.leftBound - (40 * initialSpan) / 400, 10);
+    expect(panned.rightBound - panned.leftBound).toBeCloseTo(initialSpan, 10);
     mouse('mousemove', 200, 200);
     expect(coordinates()).toEqual(panned);
   });
 
   it('ends a mouse drag outside the canvas and cancels it when the window loses focus', () => {
+    const initial = coordinates();
     mouse('mousedown', 100, 100);
     document.dispatchEvent(new MouseEvent('mousemove', { clientX: 450, clientY: 140 }));
     fixture.detectChanges();
     const panned = coordinates();
-    expect(panned.leftBound).toBeCloseTo(-2 - (350 * 3) / 400);
+    expect(panned.leftBound).toBeCloseTo(initial.leftBound - (350 * initialSpan) / 400, 10);
     document.dispatchEvent(new MouseEvent('mouseup', { clientX: 450, clientY: 140 }));
     mouse('mousemove', 200, 200);
     expect(coordinates()).toEqual(panned);
@@ -251,7 +520,7 @@ describe('fractal navigation', () => {
     now = 1000;
     touch('touchstart', [[150, 100]]);
     touch('touchend', []);
-    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(1.5);
+    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(initialSpan / 2, 10);
     touch('touchstart', [[150, 100]]);
     touch('touchmove', [[200, 100]]);
     const panned = coordinates();
@@ -263,8 +532,8 @@ describe('fractal navigation', () => {
 
   it('pinches in and out while preserving the point between the fingers', () => {
     const initial = coordinates();
-    const anchorX = initial.leftBound + (150 * 3) / 400;
-    const anchorY = initial.topBound + (100 * 3) / 400;
+    const anchorX = initial.leftBound + (150 * initialSpan) / 400;
+    const anchorY = initial.topBound + (100 * initialSpan) / 400;
     touch('touchstart', [
       [100, 100],
       [200, 100],
@@ -274,26 +543,26 @@ describe('fractal navigation', () => {
       [250, 100],
     ]);
     const zoomed = coordinates();
-    expect(zoomed.rightBound - zoomed.leftBound).toBeCloseTo(1.5);
-    expect(zoomed.leftBound + (150 * 1.5) / 400).toBeCloseTo(anchorX);
-    expect(zoomed.topBound + (100 * 1.5) / 400).toBeCloseTo(anchorY);
+    expect(zoomed.rightBound - zoomed.leftBound).toBeCloseTo(initialSpan / 2, 10);
+    expect(zoomed.leftBound + (150 * initialSpan) / 2 / 400).toBeCloseTo(anchorX, 10);
+    expect(zoomed.topBound + (100 * initialSpan) / 2 / 400).toBeCloseTo(anchorY, 10);
     expect(move.defaultPrevented).toBe(true);
     touch('touchmove', [
       [100, 100],
       [200, 100],
     ]);
-    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(3);
+    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(initialSpan, 10);
     touch('touchend', []);
-    expect(coordinates().leftBound).toBeCloseTo(initial.leftBound);
+    expect(coordinates().leftBound).toBeCloseTo(initial.leftBound, 10);
   });
 
   it('pans with one finger without drawing a zoom rectangle', () => {
     const initial = coordinates();
     touch('touchstart', [[100, 100]]);
     touch('touchmove', [[120, 130]]);
-    expect(coordinates().leftBound).toBeCloseTo(initial.leftBound - (20 * 3) / 400);
-    expect(coordinates().topBound).toBeCloseTo(initial.topBound - (30 * 3) / 400);
-    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(3);
+    expect(coordinates().leftBound).toBeCloseTo(initial.leftBound - (20 * initialSpan) / 400, 10);
+    expect(coordinates().topBound).toBeCloseTo(initial.topBound - (30 * initialSpan) / 400, 10);
+    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(initialSpan, 10);
     const moved = coordinates();
     touch('touchend', []);
     expect(coordinates()).toEqual(moved);
@@ -312,8 +581,8 @@ describe('fractal navigation', () => {
     const zoomed = coordinates();
     touch('touchend', [[250, 100]]);
     touch('touchmove', [[260, 100]]);
-    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(1.5);
-    expect(coordinates().leftBound).toBeCloseTo(zoomed.leftBound - (10 * 1.5) / 400);
+    expect(coordinates().rightBound - coordinates().leftBound).toBeCloseTo(initialSpan / 2, 10);
+    expect(coordinates().leftBound).toBeCloseTo(zoomed.leftBound - (10 * initialSpan) / 2 / 400, 10);
   });
 
   it('ignores cancelled gestures and coincident fingers without corrupting coordinates', () => {

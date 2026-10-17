@@ -18,7 +18,7 @@ type CanvasInputEvent =
 
 export function getCanvasCoordinates(
   event: CanvasInputEvent,
-  canvas: Pick<HTMLCanvasElement, 'getBoundingClientRect'>,
+  canvas: { getBoundingClientRect(): { left: number; top: number } },
 ): CanvasCoordinates | null {
   if ('offsetX' in event) {
     return { offsetX: event.offsetX, offsetY: event.offsetY };

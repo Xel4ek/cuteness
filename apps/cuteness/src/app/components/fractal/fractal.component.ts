@@ -2,65 +2,70 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  Injector,
   ElementRef,
   HostListener,
   OnDestroy,
   ViewChild,
   inject,
+  signal,
 } from '@angular/core';
+import { signalMethod } from '@ngrx/signals';
+import { Clipboard } from '@angular/cdk/clipboard';
 
 import { FullScreenDirective } from './directives/full-screen/full-screen.directive';
-import { MatButtonModule } from '@angular/material/button';
 import { MainLayoutHeaderService } from '../../layouts/mail-layout/main-layout-header.service';
-import { ShortNumberPipe } from '../../pipes/short-number.pipe';
 import { WorkerEvent } from './worker/worker-event';
 import { MandelbrotWorkerCommand } from './worker/mandelbrot-worker-command';
-import { SceneControlComponent } from '../scena-control/scene-control.component';
-import { ControlAction } from '../scena-control/control-action';
+import { MandelbrotWorkerResult } from './worker/mandelbrot-worker-result';
+import { IterationControlComponent } from './iteration-control/iteration-control.component';
 import { SelectAreaDirective } from './directives/select-area/select-area.directive';
-import { CanvasCoordinates, CanvasTransform, getCanvasCoordinates } from './canvas-coordinates';
+import { CanvasCoordinates, CanvasTransform } from './canvas-coordinates';
+import { frameProjection, FractalView, FractalViewport } from './fractal-viewport';
+import { centerLabels, parsePosition, positionLink } from './fractal-position';
+
+interface FractalFrame {
+  coordinates: FractalView;
+  maxIteration: number;
+  image: ImageBitmap;
+}
 
 @Component({
   selector: 'cuteness-fractal',
-  imports: [FullScreenDirective, MatButtonModule, SceneControlComponent, SelectAreaDirective],
+  imports: [FullScreenDirective, IterationControlComponent, SelectAreaDirective],
   templateUrl: './fractal.component.html',
   styleUrls: ['./fractal.component.scss'],
-  providers: [ShortNumberPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class FractalComponent implements AfterViewInit, OnDestroy {
   private readonly mainLayoutHeaderService = inject(MainLayoutHeaderService);
-  private readonly shortNumberPipe = inject(ShortNumberPipe);
+  private readonly injector = inject(Injector);
+  private readonly clipboard = inject(Clipboard);
 
   private readonly worker: Worker = new Worker(new URL('./worker/fractal.worker.ts', import.meta.url), {
     type: 'module',
   });
 
-  private leftBound = -2.0;
-  private rightBound = 1.0;
-  private topBound = 1.0;
-  private readonly minimumZoom = 0.5;
+  private readonly initialPosition = parsePosition(window.location.href);
+  private readonly viewport = new FractalViewport(this.initialPosition?.coordinates);
+  private inFlight?: Omit<FractalFrame, 'image'>;
+  private frame?: FractalFrame;
+  private animationFrame?: number;
+  private frameContext: CanvasRenderingContext2D | null = null;
 
   @ViewChild('control', { static: true })
   private readonly controlCanvasElement!: ElementRef<HTMLCanvasElement>;
 
-  @ViewChild('offscreenCanvas', { static: true })
-  private readonly offscreenCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('frameCanvas', { static: true })
+  private readonly frameCanvas!: ElementRef<HTMLCanvasElement>;
 
   private controlContext: CanvasRenderingContext2D | null = null;
 
-  private lock = false;
-
-  protected actionList: ControlAction[] = [
-    {
-      title: 'Max Iteration',
-      value: 500,
-      action: (value: number) => {
-        this.postMessage({ type: WorkerEvent.settings, maxIteration: value });
-      },
-      values: [250, 500, 1000, 2500, 5000],
-    },
-  ];
+  protected readonly maxIteration = signal(this.initialPosition?.maxIteration ?? 2000);
+  protected readonly center = signal(centerLabels(this.viewport.snapshot(), window.innerWidth));
+  protected readonly copied = signal(false);
+  protected readonly pasteMessage = signal('');
+  private readonly updateIterations = signalMethod<number>(() => this.render());
 
   public ngAfterViewInit(): void {
     this.controlContext = this.controlCanvasElement.nativeElement.getContext('2d');
@@ -69,14 +74,47 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
       this.controlContext.strokeStyle = 'orange';
     }
 
-    this.setBound();
+    const canvas = this.frameCanvas.nativeElement;
+    this.frameContext = canvas.getContext('2d', { alpha: false });
+    const offscreenCanvas = new OffscreenCanvas(canvas.width, canvas.height);
 
-    const offscreenCanvas = this.offscreenCanvas.nativeElement.transferControlToOffscreen();
+    this.worker.onmessage = ({ data }: MessageEvent<MandelbrotWorkerResult>) => {
+      if (data.type !== 'rendered') {
+        return;
+      }
+      const requested = this.inFlight;
+      if (!requested) {
+        data.image.close();
 
-    this.worker.postMessage({ type: WorkerEvent.init, offscreenCanvas }, [offscreenCanvas]);
+        return;
+      }
+      this.frame?.image.close();
+      this.frame = { ...requested, image: data.image };
+      this.inFlight = undefined;
+      this.drawFrame();
+      if (this.isCurrent(requested)) {
+        this.updateHeader(data.renderTimeMs);
+      }
+      this.requestFrame();
+    };
+    this.postMessage(
+      {
+        type: WorkerEvent.init,
+        offscreenCanvas,
+        coordinates: this.viewport.snapshot(),
+        maxIteration: this.maxIteration(),
+      },
+      [offscreenCanvas],
+    );
+    this.updateIterations(this.maxIteration, { injector: this.injector });
   }
 
   public ngOnDestroy(): void {
+    if (this.animationFrame !== undefined) {
+      cancelAnimationFrame(this.animationFrame);
+    }
+    this.frame?.image.close();
+    this.worker.onmessage = null;
     this.worker.terminate();
   }
 
@@ -87,99 +125,125 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
     startEvent: CanvasCoordinates;
     stopEvent: CanvasCoordinates;
   }) {
-    const canvas = this.controlCanvasElement.nativeElement;
-    const start = getCanvasCoordinates(startEvent, canvas);
-    const stop = getCanvasCoordinates(stopEvent, canvas);
-    if (!start || !stop) {
-      return;
-    }
-
-    const { offsetX, offsetY } = start;
-    const perPixel = (this.rightBound - this.leftBound) / this.offscreenCanvas.nativeElement.offsetWidth;
-
-    let rightBound = Math.max(offsetX, stop.offsetX);
-    const leftBound = Math.min(offsetX, stop.offsetX);
-
-    if (rightBound == leftBound) {
-      rightBound += 1;
-    }
-
-    const width = stop.offsetX - offsetX;
-    const height =
-      ((Math.sign(width * (stop.offsetY - offsetY)) * width) / this.offscreenCanvas.nativeElement.width) *
-      this.offscreenCanvas.nativeElement.height;
-
-    this.leftBound += leftBound * perPixel;
-    this.rightBound += (rightBound - this.offscreenCanvas.nativeElement.offsetWidth) * perPixel;
-    this.topBound += Math.min(offsetY, offsetY + height) * perPixel;
+    const canvas = this.frameCanvas.nativeElement;
+    this.pasteMessage.set('');
+    this.viewport.select(startEvent, stopEvent, canvas.width, canvas.height);
     this.render();
   }
 
-  protected transformCoordinates({ from, to, scale }: CanvasTransform) {
-    const width = this.controlCanvasElement.nativeElement.getBoundingClientRect().width;
-    const span = this.rightBound - this.leftBound;
-    const perPixel = span / width;
-    const nextSpan = Math.min(span * scale, 3 / this.minimumZoom);
-    const nextPerPixel = nextSpan / width;
-    const leftBound = this.leftBound + from.offsetX * perPixel - to.offsetX * nextPerPixel;
-    const rightBound = leftBound + nextSpan;
-    const topBound = this.topBound + from.offsetY * perPixel - to.offsetY * nextPerPixel;
-    if (
-      !Number.isFinite(leftBound) ||
-      !Number.isFinite(rightBound) ||
-      !Number.isFinite(topBound) ||
-      rightBound <= leftBound
-    ) {
-      return;
-    }
-
-    this.leftBound = leftBound;
-    this.rightBound = rightBound;
-    this.topBound = topBound;
+  protected transformCoordinates(change: CanvasTransform) {
+    const canvas = this.frameCanvas.nativeElement;
+    this.pasteMessage.set('');
+    this.viewport.transform(change, canvas.width, canvas.height);
     this.render();
   }
 
-  @HostListener('contextmenu')
   protected reset() {
-    this.setBound();
+    this.pasteMessage.set('');
+    this.viewport.reset();
     this.render();
+  }
+
+  protected copyCenter(): void {
+    this.pasteMessage.set('');
+    this.copied.set(
+      this.clipboard.copy(positionLink(this.viewport.snapshot(), this.maxIteration(), window.location.href)),
+    );
+  }
+
+  @HostListener('contextmenu', ['$event'])
+  protected pasteCenter(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.copied.set(false);
+    if (!navigator.clipboard?.readText) {
+      this.reset();
+      this.pasteMessage.set('Starting view restored');
+
+      return;
+    }
+    void navigator.clipboard.readText().then(
+      (text) => {
+        const position = parsePosition(text);
+        if (position) {
+          this.viewport.restore(position.coordinates);
+          if (position.maxIteration !== undefined) {
+            this.maxIteration.set(position.maxIteration);
+          }
+          this.render();
+        } else {
+          this.reset();
+        }
+        this.pasteMessage.set(position ? 'Position pasted' : 'Starting view restored');
+      },
+      () => {
+        this.reset();
+        this.pasteMessage.set('Starting view restored · Allow clipboard access to paste a position');
+      },
+    );
   }
 
   private render() {
+    this.center.set(centerLabels(this.viewport.snapshot(), this.frameCanvas.nativeElement.width));
+    this.copied.set(false);
+    this.updateHeader();
+    this.drawFrame();
+    this.requestFrame();
+  }
+
+  private isCurrent(frame: Omit<FractalFrame, 'image'>): boolean {
+    const current = this.viewport.snapshot();
+
+    return (
+      frame.maxIteration === this.maxIteration() &&
+      frame.coordinates.precision === current.precision &&
+      frame.coordinates.span === current.span &&
+      frame.coordinates.centerRe === current.centerRe &&
+      frame.coordinates.centerIm === current.centerIm
+    );
+  }
+
+  private requestFrame(): void {
+    if (this.inFlight || (this.frame && this.isCurrent(this.frame))) {
+      return;
+    }
     this.postMessage({
-      type: WorkerEvent.coordinates,
-      coordinates: {
-        topBound: this.topBound,
-        leftBound: this.leftBound,
-        rightBound: this.rightBound,
-      },
+      type: WorkerEvent.render,
+      coordinates: this.viewport.snapshot(),
+      maxIteration: this.maxIteration(),
     });
+  }
+
+  private drawFrame(): void {
+    const context = this.frameContext;
+    if (!context || !this.frame || this.animationFrame !== undefined) {
+      return;
+    }
+    this.animationFrame = requestAnimationFrame(() => {
+      this.animationFrame = undefined;
+      const frame = this.frame;
+      if (!frame) {
+        return;
+      }
+      const canvas = this.frameCanvas.nativeElement;
+      const projection = frameProjection(frame.coordinates, this.viewport.snapshot(), canvas.width, canvas.height);
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.setTransform(projection.scale, 0, 0, projection.scale, projection.x, projection.y);
+      context.drawImage(frame.image, 0, 0);
+    });
+  }
+
+  private updateHeader(renderTimeMs = 0): void {
+    const render = renderTimeMs >= 1000 ? `${(renderTimeMs / 1000).toFixed(2)} s` : `${Math.round(renderTimeMs)} ms`;
     this.mainLayoutHeaderService.setHeaderInfo({
-      zoom: this.shortNumberPipe.transform(3 / (this.rightBound - this.leftBound), 2),
+      zoom: this.viewport.zoomLabel(),
+      ...(renderTimeMs > 100 ? { render } : {}),
     });
-
-    // this.lock = true;
-
-    // this.worker.postMessage({
-    //   type: WorkerEvent.render,
-    //   canvasWidth: this.offscreenCanvas.nativeElement.width,
-    //   canvasHeight: this.offscreenCanvas.nativeElement.height,
-    //   rightBound: this.rightBound,
-    //   leftBound: this.leftBound,
-    //   topBound: this.topBound,
-    // });
   }
 
-  private setBound() {
-    this.rightBound = 1.0;
-    this.leftBound = -2.0;
-    this.topBound =
-      ((this.leftBound - this.rightBound) * this.offscreenCanvas.nativeElement.height) /
-      this.offscreenCanvas.nativeElement.width /
-      2;
-  }
-
-  private postMessage(data: MandelbrotWorkerCommand) {
-    this.worker.postMessage(data);
+  private postMessage(data: MandelbrotWorkerCommand, transfer: Transferable[] = []) {
+    this.inFlight = { coordinates: data.coordinates, maxIteration: data.maxIteration };
+    this.worker.postMessage(data, transfer);
   }
 }

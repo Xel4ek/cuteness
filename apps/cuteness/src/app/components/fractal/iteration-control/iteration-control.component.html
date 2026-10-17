@@ -1,0 +1,33 @@
+<div class="stepper">
+  <button
+    type="button"
+    aria-label="Decrease iterations"
+    [disabled]="disabled() || candidate() <= 100"
+    (pointerdown)="$event.preventDefault()"
+    (click)="commit(-100)"
+  >
+    −
+  </button>
+  <input
+    #input
+    aria-label="Maximum iterations"
+    type="text"
+    inputmode="numeric"
+    autocomplete="off"
+    spellcheck="false"
+    [value]="draft()"
+    [disabled]="disabled()"
+    (input)="edit($event)"
+    (blur)="commit(); touch.emit()"
+    (keydown.enter)="$event.preventDefault(); commit()"
+  />
+  <button
+    type="button"
+    aria-label="Increase iterations"
+    [disabled]="disabled() || candidate() >= 50000"
+    (pointerdown)="$event.preventDefault()"
+    (click)="commit(100)"
+  >
+    +
+  </button>
+</div>

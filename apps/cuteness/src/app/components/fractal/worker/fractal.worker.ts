@@ -1,229 +1,250 @@
-import { WorkerEvent } from './worker-event';
+/// <reference lib="webworker" />
+import { fixedToNumber, FractalPoint, FractalView, pointAt, scaledParts } from '../fractal-viewport';
 import { MandelbrotWorkerCommand } from './mandelbrot-worker-command';
+import { MandelbrotWorkerResult } from './mandelbrot-worker-result';
+import { buildReference, ReferenceOrbit, referencesInView } from './mandelbrot-math';
+import { mandelbrotShader } from './mandelbrot-shader';
+import { WorkerEvent } from './worker-event';
 
-const code = `
-struct MandelbrotBound {
-  canvasSize: vec2f,
-  bound: vec2f,
-};
+class Mandelbrot {
+  private device!: GPUDevice;
+  private context!: GPUCanvasContext;
+  private canvas!: OffscreenCanvas;
+  private computePipeline!: GPUComputePipeline;
+  private displayPipeline!: GPURenderPipeline;
+  private computeBindings!: GPUBindGroup;
+  private displayBindings!: GPUBindGroup;
+  private parameters!: GPUBuffer;
+  private orbit!: GPUBuffer;
+  private references!: GPUBuffer;
+  private pixels!: GPUBuffer;
+  private indices!: GPUBuffer;
+  private readback!: GPUBuffer;
+  private initialIndices!: Uint32Array;
+  private cachedReferences: ReferenceOrbit[] = [];
 
-struct MandelbrotSettings {
-  maxIteration: u32,
-}
-
-@group(0) @binding(0) var<uniform> mandelbrotBound: MandelbrotBound;
-@group(0) @binding(1) var<uniform> mandelbrotSettings: MandelbrotSettings;
-
-@vertex
-fn vs(
-  @builtin(vertex_index)
-  vertexIndex : u32
-) -> @builtin(position) vec4f {
-  let pos = array<vec2f, 3>(
-    vec2f(-1.0, -1.0),
-    vec2f(-1.0, 3.0),
-    vec2f(3.0, -1.0),
-  );
-
-  return vec4f(pos[vertexIndex], 0.0, 1.0);
-}
-
-fn mandelbrot(position: vec4f) -> vec4f {
-  let cRe = position.x * mandelbrotBound.canvasSize.x + mandelbrotBound.bound.x ;
-  let cIm = position.y * mandelbrotBound.canvasSize.y + mandelbrotBound.bound.y ;
-  var zRe = 0.0;
-  var zIm = 0.0;
-
-  for (var i: u32 = 0; i < mandelbrotSettings.maxIteration; i++) {
-    let zRe2 = zRe * zRe;
-    let zIm2 = zIm * zIm;
-
-    if (zRe2 + zIm2 > 4.0) {
-      return unpack4x8unorm((0xff & (i * 7)) | ((0xff & (i * 3) ) << 8) | ((0xff & (i * 5)) << 16));
+  public async init(canvas: OffscreenCanvas): Promise<void> {
+    const adapter = await navigator.gpu?.requestAdapter();
+    const device = await adapter?.requestDevice();
+    if (!device) {
+      throw new Error('This fractal requires a browser with WebGPU support.');
     }
 
-    zIm = 2.0 * zRe * zIm + cIm;
-    zRe = zRe2 - zIm2 + cRe;
-  }
-
-  return vec4f(0.0, 0.0, 0.0, 1.0);
-}
-
-@fragment
-fn fs(@builtin(position) position: vec4f) -> @location(0) vec4f {
-  return mandelbrot(position);
-}
-`;
-
-abstract class BaseWebGPU {
-  public adapter?: GPUAdapter | null;
-  public device?: GPUDevice;
-  public context?: GPUCanvasContext;
-  public presentationFormat!: GPUTextureFormat;
-  protected offscreenCanvas!: OffscreenCanvas;
-
-  public async init(offscreenCanvas: OffscreenCanvas) {
-    this.adapter = await navigator.gpu.requestAdapter();
-    this.device = await this.adapter?.requestDevice({
-      requiredFeatures: ['timestamp-query'],
-    });
-
-    if (!this.device) {
-      throw new Error('Need a browser that supports WebGPU');
-    }
-
-    this.offscreenCanvas = offscreenCanvas;
-    this.context = this.offscreenCanvas.getContext('webgpu') as GPUCanvasContext;
-    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.context.configure({
-      device: this.device,
-      format: this.presentationFormat,
-    });
-  }
-}
-
-class Mandelbrot extends BaseWebGPU {
-  protected module!: GPUShaderModule;
-  protected pipeline!: GPURenderPipeline;
-  protected renderPassDescriptor!: GPURenderPassDescriptor & { colorAttachments: [GPURenderPassColorAttachment] };
-  private bindGroup!: GPUBindGroup;
-  private staticUniformBuffer!: GPUBuffer;
-  private uniformValues!: Float32Array;
-  private settingsUniformBuffer!: GPUBuffer;
-  private settingsUniformValues!: ArrayBuffer;
-
-  public override async init(offscreenCanvas: OffscreenCanvas): Promise<void> {
-    await super.init(offscreenCanvas);
-
-    const context = this.context;
+    const context = canvas.getContext('webgpu');
     if (!context) {
-      throw new Error('Could not create a WebGPU canvas context');
+      throw new Error('Could not create the WebGPU canvas context.');
     }
 
-    this.module = this.device!.createShaderModule({
-      label: 'our hardcoded red triangle shaders',
-      code: code,
-    });
-
-    this.pipeline = this.device!.createRenderPipeline({
-      label: 'our hardcoded red triangle pipeline',
+    this.device = device;
+    this.context = context;
+    this.canvas = canvas;
+    const format = navigator.gpu.getPreferredCanvasFormat();
+    context.configure({ device, format, alphaMode: 'opaque' });
+    const module = device.createShaderModule({ code: mandelbrotShader });
+    this.computePipeline = await device.createComputePipelineAsync({
       layout: 'auto',
-      vertex: {
-        module: this.module,
-      },
-      fragment: {
-        module: this.module,
-        targets: [{ format: this.presentationFormat }],
-      },
+      compute: { module, entryPoint: 'calculate' },
     });
+    this.displayPipeline = await device.createRenderPipelineAsync({
+      layout: 'auto',
+      vertex: { module, entryPoint: 'vertex' },
+      fragment: { module, entryPoint: 'fragment', targets: [{ format }] },
+    });
+    this.parameters = this.buffer(48, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST);
+    this.references = this.buffer(24, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST);
+    this.pixels = this.buffer(canvas.width * canvas.height * 4, GPUBufferUsage.STORAGE);
+    this.indices = this.buffer(
+      canvas.width * canvas.height * 4,
+      GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+    );
+    this.readback = this.buffer(canvas.width * canvas.height * 4, GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST);
+    this.initialIndices = new Uint32Array(canvas.width * canvas.height);
+    for (let index = 0; index < this.initialIndices.length; index++) {
+      this.initialIndices[index] = index;
+    }
+  }
 
-    this.renderPassDescriptor = {
-      label: 'our basic canvas renderPass',
+  private buffer(size: number, usage: GPUBufferUsageFlags): GPUBuffer {
+    return this.device.createBuffer({ size, usage });
+  }
+
+  private allocateOrbit(maximum: number): void {
+    if (this.orbit?.size === (maximum + 1) * 32) {
+      return;
+    }
+    this.orbit?.destroy();
+    this.orbit = this.buffer((maximum + 1) * 32, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST);
+    this.computeBindings = this.device.createBindGroup({
+      layout: this.computePipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: this.parameters } },
+        { binding: 1, resource: { buffer: this.orbit } },
+        { binding: 2, resource: { buffer: this.references } },
+        { binding: 3, resource: { buffer: this.pixels } },
+        { binding: 4, resource: { buffer: this.indices } },
+      ],
+    });
+    this.displayBindings = this.device.createBindGroup({
+      layout: this.displayPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: this.parameters } },
+        { binding: 3, resource: { buffer: this.pixels } },
+      ],
+    });
+  }
+
+  private writeParameters(view: FractalView, maximum: number): void {
+    const data = new ArrayBuffer(48);
+    const integers = new Uint32Array(data);
+    const signed = new Int32Array(data);
+    const floats = new Float32Array(data);
+    integers.set([this.canvas.width, this.canvas.height, maximum, 0]);
+    const [spanMantissa, , spanExponent] = scaledParts(view.span, 0n, view.precision);
+    floats.set(
+      [
+        fixedToNumber(view.centerRe, view.precision),
+        fixedToNumber(view.centerIm, view.precision),
+        fixedToNumber(view.span, view.precision) / this.canvas.width,
+        spanMantissa,
+      ],
+      4,
+    );
+    signed[8] = spanExponent;
+    this.device.queue.writeBuffer(this.parameters, 0, data);
+  }
+
+  private writeReference(reference: ReferenceOrbit, origin: FractalPoint, view: FractalView, pixel: number): void {
+    const data = new ArrayBuffer(24);
+    const integers = new Uint32Array(data);
+    const floats = new Float32Array(data);
+    const span = view.span << BigInt(origin.precision - view.precision);
+    const width = BigInt(this.canvas.width);
+    // Subtract fixed-point coordinates before converting to screen-space floats.
+    floats.set([
+      fixedToNumber((((reference.point.re - origin.re) * width) << 32n) / span, 32),
+      fixedToNumber((((reference.point.im - origin.im) * width) << 32n) / span, 32),
+    ]);
+    integers.set([reference.iterations, reference.length, pixel], 2);
+    this.device.queue.writeBuffer(this.references, 0, data);
+  }
+
+  private display(): void {
+    const encoder = this.device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({
       colorAttachments: [
         {
-          view: context.getCurrentTexture().createView(),
-          clearValue: [0.3, 0.3, 0.3, 0.1],
+          view: this.context.getCurrentTexture().createView(),
           loadOp: 'clear',
           storeOp: 'store',
+          clearValue: [0, 0, 0, 1],
         },
       ],
-      // timestampWrites: {
-      //   querySet,
-      //   beginningOfPassWriteIndex: 0,
-      //   endOfPassWriteIndex: 1,
-      // },
-    };
-
-    this.createUniforms();
-  }
-
-  private createUniforms() {
-    const staticUniformBufferSize = 16;
-
-    this.staticUniformBuffer = this.device!.createBuffer({
-      label: `static uniforms for obj`,
-      size: staticUniformBufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
-    this.uniformValues = new Float32Array(staticUniformBufferSize / 4);
-
-    const settingsUniformBufferSize = 4;
-    this.settingsUniformBuffer = this.device!.createBuffer({
-      label: `calc settings`,
-      size: settingsUniformBufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    this.settingsUniformValues = new ArrayBuffer(settingsUniformBufferSize);
-    this.updateSettings(500);
-
-    this.bindGroup = this.device!.createBindGroup({
-      label: `bind group for obj`,
-      layout: this.pipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: { buffer: this.staticUniformBuffer } },
-        { binding: 1, resource: { buffer: this.settingsUniformBuffer } },
-      ],
-    });
-  }
-
-  public updateUniforms(leftBound: number, rightBound: number, topBound?: number) {
-    const pixPerDin = (rightBound - leftBound) / this.offscreenCanvas.width;
-    const hPix = (-this.offscreenCanvas.height * pixPerDin) / 2;
-
-    this.uniformValues.set([pixPerDin, pixPerDin, leftBound, topBound ?? hPix]);
-    this.device?.queue.writeBuffer(this.staticUniformBuffer, 0, this.uniformValues);
-  }
-
-  public render() {
-    this.renderPassDescriptor.colorAttachments[0]!.view = this.context!.getCurrentTexture().createView();
-
-    const encoder = this.device!.createCommandEncoder({ label: 'our encoder' });
-
-    // создаем render pass encoder для установке нашего шаблона
-    const pass = encoder.beginRenderPass(this.renderPassDescriptor);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
+    pass.setPipeline(this.displayPipeline);
+    pass.setBindGroup(0, this.displayBindings);
     pass.draw(3);
     pass.end();
-    // encoder.resolveQuerySet(querySet, 0, querySet.count, resolveBuffer, 0);
-
-    // if (resultBuffer.mapState === 'unmapped') {
-    //   encoder.copyBufferToBuffer(resolveBuffer, 0, resultBuffer, 0, resultBuffer.size);
-    // }
-
-    const commandBuffer = encoder.finish();
-    this.device?.queue.submit([commandBuffer]);
+    this.device.queue.submit([encoder.finish()]);
   }
 
-  public updateSettings(maxIteration: number) {
-    const maxIterationBuffer = new Uint32Array(this.settingsUniformValues);
-    maxIterationBuffer.set([maxIteration]);
-    this.device?.queue.writeBuffer(this.settingsUniformBuffer, 0, this.settingsUniformValues);
+  private async calculate(active: Uint32Array): Promise<Uint32Array> {
+    const count = active.length;
+    this.device.queue.writeBuffer(this.indices, 0, active);
+    this.device.queue.writeBuffer(this.parameters, 12, new Uint32Array([count]));
+    const batchSize = 262144;
+    let offset = 0;
+    while (offset < count) {
+      const size = Math.min(batchSize, count - offset);
+      this.device.queue.writeBuffer(this.parameters, 40, new Uint32Array([offset]));
+      const encoder = this.device.createCommandEncoder();
+      const pass = encoder.beginComputePass();
+      pass.setPipeline(this.computePipeline);
+      pass.setBindGroup(0, this.computeBindings);
+      pass.dispatchWorkgroups(Math.ceil(size / 64));
+      pass.end();
+      this.device.queue.submit([encoder.finish()]);
+      offset += size;
+      if (offset < count) {
+        await this.device.queue.onSubmittedWorkDone();
+      }
+    }
+    const encoder = this.device.createCommandEncoder();
+    encoder.copyBufferToBuffer(this.indices, 0, this.readback, 0, count * 4);
+    this.device.queue.submit([encoder.finish()]);
+    await this.readback.mapAsync(GPUMapMode.READ);
+    const remaining = new Uint32Array(this.readback.getMappedRange(0, count * 4).slice(0));
+    this.readback.unmap();
+
+    let unresolved = 0;
+    for (let index = 0; index < remaining.length; index++) {
+      if (remaining[index] !== 0xffffffff) {
+        remaining[unresolved++] = remaining[index];
+      }
+    }
+
+    return remaining.subarray(0, unresolved);
+  }
+
+  public async render(view: FractalView, maximum: number): Promise<MandelbrotWorkerResult> {
+    const started = performance.now();
+    this.allocateOrbit(maximum);
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+    const origin = pointAt(view, width, height, 0, 0);
+    this.cachedReferences = referencesInView(this.cachedReferences, view, width, height, maximum);
+    const cached = [...this.cachedReferences];
+    let active: Uint32Array = this.initialIndices;
+    let referenceCount = 0;
+    let referencesBuilt = 0;
+    this.writeParameters(view, maximum);
+
+    while (active.length) {
+      let reference = cached[referenceCount];
+      let referencePixel = 0xffffffff;
+      if (!reference) {
+        referencePixel =
+          referenceCount === 0
+            ? Math.floor(height / 2) * width + Math.floor(width / 2)
+            : active[Math.floor(active.length / 2)];
+        const point = pointAt(
+          view,
+          width,
+          height,
+          (referencePixel % width) + 0.5,
+          Math.floor(referencePixel / width) + 0.5,
+        );
+        reference = buildReference(point, maximum);
+        this.cachedReferences.push(reference);
+        if (this.cachedReferences.length > 16) {
+          this.cachedReferences.shift();
+        }
+        referencesBuilt++;
+      }
+      this.device.queue.writeBuffer(this.orbit, 0, reference.samples);
+      this.writeReference(reference, origin, view, referencePixel);
+      active = await this.calculate(active);
+      referenceCount++;
+    }
+    this.display();
+    await this.device.queue.onSubmittedWorkDone();
+    const image = this.canvas.transferToImageBitmap();
+
+    return {
+      type: 'rendered',
+      referenceCount,
+      referencesBuilt,
+      renderTimeMs: performance.now() - started,
+      image,
+    };
   }
 }
 
 const mandelbrot = new Mandelbrot();
-const render = mandelbrot.render.bind(mandelbrot);
-let initialization: Promise<void> | undefined;
-
+// The component sends another request only after receiving the completed frame.
 self.onmessage = async ({ data }: MessageEvent<MandelbrotWorkerCommand>) => {
-  switch (data.type) {
-    case WorkerEvent.init:
-      initialization = mandelbrot.init(data.offscreenCanvas);
-      await initialization;
-      mandelbrot.updateUniforms(-2, 1);
-      break;
-    case WorkerEvent.coordinates:
-      await initialization;
-      mandelbrot.updateUniforms(data.coordinates.leftBound, data.coordinates.rightBound, data.coordinates.topBound);
-      break;
-    case WorkerEvent.settings:
-      await initialization;
-      mandelbrot.updateSettings(data.maxIteration);
-      break;
+  if (data.type === WorkerEvent.init) {
+    await mandelbrot.init(data.offscreenCanvas);
   }
-
-  requestAnimationFrame(render);
+  const result = await mandelbrot.render(data.coordinates, data.maxIteration);
+  self.postMessage(result, [result.image]);
 };

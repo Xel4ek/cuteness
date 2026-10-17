@@ -195,7 +195,6 @@ export class SelectAreaDirective implements AfterViewInit {
     };
   }
 
-  @HostListener('contextmenu', ['$event'])
   @HostListener('dblclick', ['$event'])
   protected reset(event: Event) {
     event.preventDefault();
@@ -204,9 +203,5 @@ export class SelectAreaDirective implements AfterViewInit {
     this.touchCancel();
     this.controlContext?.clearRect(0, 0, this.controlCanvasElement.width, this.controlCanvasElement.height);
     this.setDefault.emit();
-    // if (!this.lock) {
-    //   this.setBound();
-    //   this.render();
-    // }
   }
 }

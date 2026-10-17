@@ -1,4 +1,4 @@
-<cuteness-scene-control [actionList]="actionList" />
+<cuteness-iteration-control [(value)]="maxIteration" />
 <canvas
   style="position: absolute; left: 0; top: 0"
   #control
@@ -8,8 +8,48 @@
   (transformCoordinates)="transformCoordinates($event)"
   cutenessFullScreen
 ></canvas>
-<canvas cutenessFullScreen #offscreenCanvas></canvas>
-<p class="navigation-hint">
-  <span class="mouse-hint">Scroll to zoom · Drag to pan · Shift + drag to select · Double-click to reset</span>
-  <span class="touch-hint">Pinch to zoom · Drag to pan · Double-tap to reset</span>
-</p>
+<canvas cutenessFullScreen #frameCanvas></canvas>
+<div class="fractal-footer">
+  <p class="navigation-hint">
+    <span class="mouse-hint"
+      >Scroll to zoom · Drag to pan · Shift + drag to select · Right-click to paste · Double-click to reset</span
+    >
+    <span class="touch-hint">Pinch to zoom · Drag to pan · Double-tap to reset</span>
+  </p>
+  <button
+    class="center-coordinates"
+    data-testid="fractal-center"
+    type="button"
+    (click)="copyCenter()"
+    [attr.aria-label]="copied() ? 'Fractal link copied' : 'Copy fractal link'"
+    [title]="copied() ? 'Link copied' : 'Click to copy a link · Right-click to paste'"
+  >
+    <span class="coordinate-values">
+      <span class="coordinate"
+        ><span class="axis">Re</span><span>{{ center().re }}</span></span
+      >
+      <span class="coordinate"
+        ><span class="axis">Im</span><span>{{ center().im }}</span></span
+      >
+    </span>
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+      aria-hidden="true"
+    >
+      @if (copied()) {
+        <path d="m5 12 4 4L19 6" />
+      } @else {
+        <rect x="8" y="8" width="12" height="12" rx="2" />
+        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+      }
+    </svg>
+  </button>
+  @if (pasteMessage()) {
+    <span class="position-message" role="status">{{ pasteMessage() }}</span>
+  }
+</div>
