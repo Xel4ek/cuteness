@@ -1,0 +1,85 @@
+{
+  "configVersion": 1,
+  "timestamp": 1792261247218,
+  "index": "/cuteness/index.html",
+  "assetGroups": [
+    {
+      "name": "cuteness",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/cuteness/138.6ebcdce40dd225b7.js",
+        "/cuteness/434.64646218cc2263d6.js",
+        "/cuteness/540.c3988b6a9f83889e.js",
+        "/cuteness/71aca7709d4bee6f.module.wasm",
+        "/cuteness/737.a51cb054a07e374b.js",
+        "/cuteness/858.7896c54506509c1d.js",
+        "/cuteness/873.d9eb41c2b4ab9699.js",
+        "/cuteness/981.365313530d7c9c2c.js",
+        "/cuteness/982.3a396b1960707b10.js",
+        "/cuteness/common.e71b621aec1ac4ef.js",
+        "/cuteness/favicon.ico",
+        "/cuteness/index.html",
+        "/cuteness/main.7d447e71072d5b4a.js",
+        "/cuteness/polyfills.e723bfae4bf46446.js",
+        "/cuteness/runtime.9faeaa19c02620ed.js",
+        "/cuteness/styles.6a335ab3570d3004.css"
+      ],
+      "patterns": []
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [],
+      "patterns": [
+        "https:\\/\\/fonts\\.googleapis\\.com\\/.*",
+        "https:\\/\\/fonts\\.gstatic\\.com\\/s\\/.*"
+      ]
+    }
+  ],
+  "dataGroups": [],
+  "hashTable": {
+    "/cuteness/138.6ebcdce40dd225b7.js": "24f603da10cb8292ed75f0e2be20fca58cbdd7e1",
+    "/cuteness/434.64646218cc2263d6.js": "2f27173fc63f93c27343ca411be7bebbe564fb78",
+    "/cuteness/540.c3988b6a9f83889e.js": "0b0a85d19a476d18979008f7f930e24c636c37ea",
+    "/cuteness/71aca7709d4bee6f.module.wasm": "96e5139299b363853b570d115f76a631ab1d3732",
+    "/cuteness/737.a51cb054a07e374b.js": "be6ded4378d2876fdbca0900b2adeecdf2762926",
+    "/cuteness/858.7896c54506509c1d.js": "a39f1e71f819fe72d89d198d6e72c80b88f6ee2b",
+    "/cuteness/873.d9eb41c2b4ab9699.js": "57b2f8159b46a2fc67bff0c6e67281920e5b83a3",
+    "/cuteness/981.365313530d7c9c2c.js": "b204d458bb905a064191582e35b3ab296b0e4b01",
+    "/cuteness/982.3a396b1960707b10.js": "90f2548eb71bd4668f23813e1ac7d0f2bc68f2c7",
+    "/cuteness/common.e71b621aec1ac4ef.js": "8f83fd01316d8e00d9e9dd145b9f50c154f36c7a",
+    "/cuteness/favicon.ico": "57981b4149548939bdeb09e38bc1f32fa0bdd637",
+    "/cuteness/index.html": "5f483dbc8cfee9f03fdb42d5b0e0f05faf6c3da3",
+    "/cuteness/main.7d447e71072d5b4a.js": "64355ba09bf89121de2b99a019656c9bf1b903aa",
+    "/cuteness/polyfills.e723bfae4bf46446.js": "78d5b84ce179ffa9051642d90f3c2f740ecb58dc",
+    "/cuteness/runtime.9faeaa19c02620ed.js": "7fb397715551957404df1aec17f0f6529ee557be",
+    "/cuteness/styles.6a335ab3570d3004.css": "432d469cafd230e7c888de94e27e0c88304cc2de"
+  },
+  "navigationUrls": [
+    {
+      "positive": true,
+      "regex": "^\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*\\.[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*\\/.*$"
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}
