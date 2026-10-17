@@ -28,6 +28,13 @@ describe('high precision fractal viewport', () => {
     expect(150 * projection.scale + projection.y).toBeCloseTo(160);
   });
 
+  it('keeps an old frame centered and proportional after the canvas changes size', () => {
+    const projection = frameProjection(overview, overview, 1200, 500, 800, 600);
+    expect(projection).toEqual({ scale: 1.5, x: 0, y: -200 });
+    expect(400 * projection.scale + projection.x).toBe(600);
+    expect(300 * projection.scale + projection.y).toBe(250);
+  });
+
   it('projects tiny viewport changes without rounding their full-size centers', () => {
     const viewport = new FractalViewport(overview);
     for (let i = 0; i < 1200; i++) viewport.transform({ from: origin, to: origin, scale: 0.5 }, 800, 600);

@@ -52,13 +52,33 @@ class Mandelbrot {
     });
     this.parameters = this.buffer(48, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST);
     this.references = this.buffer(24, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST);
-    this.pixels = this.buffer(canvas.width * canvas.height * 4, GPUBufferUsage.STORAGE);
+    this.allocatePixels();
+  }
+
+  public resize(width: number, height: number): void {
+    if (this.canvas.width === width && this.canvas.height === height) {
+      return;
+    }
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.allocatePixels();
+    if (this.orbit) {
+      this.createBindings();
+    }
+  }
+
+  private allocatePixels(): void {
+    this.pixels?.destroy();
+    this.indices?.destroy();
+    this.readback?.destroy();
+    const { width, height } = this.canvas;
+    this.pixels = this.buffer(width * height * 4, GPUBufferUsage.STORAGE);
     this.indices = this.buffer(
-      canvas.width * canvas.height * 4,
+      width * height * 4,
       GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
     );
-    this.readback = this.buffer(canvas.width * canvas.height * 4, GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST);
-    this.initialIndices = new Uint32Array(canvas.width * canvas.height);
+    this.readback = this.buffer(width * height * 4, GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST);
+    this.initialIndices = new Uint32Array(width * height);
     for (let index = 0; index < this.initialIndices.length; index++) {
       this.initialIndices[index] = index;
     }
@@ -74,6 +94,10 @@ class Mandelbrot {
     }
     this.orbit?.destroy();
     this.orbit = this.buffer((maximum + 1) * 32, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST);
+    this.createBindings();
+  }
+
+  private createBindings(): void {
     this.computeBindings = this.device.createBindGroup({
       layout: this.computePipeline.getBindGroupLayout(0),
       entries: [
@@ -244,6 +268,8 @@ const mandelbrot = new Mandelbrot();
 self.onmessage = async ({ data }: MessageEvent<MandelbrotWorkerCommand>) => {
   if (data.type === WorkerEvent.init) {
     await mandelbrot.init(data.offscreenCanvas);
+  } else {
+    mandelbrot.resize(data.width, data.height);
   }
   const result = await mandelbrot.render(data.coordinates, data.maxIteration);
   self.postMessage(result, [result.image]);

@@ -8,19 +8,22 @@
   >
     −
   </button>
-  <input
-    #input
-    aria-label="Maximum iterations"
-    type="text"
-    inputmode="numeric"
-    autocomplete="off"
-    spellcheck="false"
-    [value]="draft()"
-    [disabled]="disabled()"
-    (input)="edit($event)"
-    (blur)="commit(); touch.emit()"
-    (keydown.enter)="$event.preventDefault(); commit()"
-  />
+  <div class="iteration-value">
+    <span aria-hidden="true">Iterations</span>
+    <input
+      #input
+      aria-label="Maximum iterations"
+      type="text"
+      inputmode="numeric"
+      autocomplete="off"
+      spellcheck="false"
+      [value]="draft()"
+      [disabled]="disabled()"
+      (input)="edit($event)"
+      (blur)="commit(); touch.emit()"
+      (keydown.enter)="$event.preventDefault(); commit()"
+    />
+  </div>
   <button
     type="button"
     aria-label="Increase iterations"

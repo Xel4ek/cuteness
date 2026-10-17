@@ -1,14 +1,14 @@
 <cuteness-iteration-control [(value)]="maxIteration" />
 <canvas
-  style="position: absolute; left: 0; top: 0"
   #control
+  tabindex="0"
+  (pointerdown)="control.focus({ preventScroll: true })"
   cutenessSelectArea
   (setDefault)="reset()"
   (selectCoordinates)="selectCoordinates($event)"
   (transformCoordinates)="transformCoordinates($event)"
-  cutenessFullScreen
 ></canvas>
-<canvas cutenessFullScreen #frameCanvas></canvas>
+<canvas #frameCanvas></canvas>
 <div class="fractal-footer">
   <p class="navigation-hint">
     <span class="mouse-hint"

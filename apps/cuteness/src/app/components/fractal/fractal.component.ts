@@ -15,7 +15,6 @@ import { Clipboard } from '@angular/cdk/clipboard';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 
-import { FullScreenDirective } from './directives/full-screen/full-screen.directive';
 import { MainLayoutHeaderService } from '../../layouts/mail-layout/main-layout-header.service';
 import { WorkerEvent } from './worker/worker-event';
 import { MandelbrotWorkerCommand } from './worker/mandelbrot-worker-command';
@@ -29,12 +28,14 @@ import { centerLabels, copyPosition, parsePosition } from './fractal-position';
 interface FractalFrame {
   coordinates: FractalView;
   maxIteration: number;
+  width: number;
+  height: number;
   image: ImageBitmap;
 }
 
 @Component({
   selector: 'cuteness-fractal',
-  imports: [FullScreenDirective, IterationControlComponent, SelectAreaDirective],
+  imports: [IterationControlComponent, SelectAreaDirective],
   templateUrl: './fractal.component.html',
   styleUrls: ['./fractal.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,6 +46,7 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
   private readonly clipboard = inject(Clipboard);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
+  private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
 
   private readonly worker: Worker = new Worker(new URL('./worker/fractal.worker.ts', import.meta.url), {
     type: 'module',
@@ -56,6 +58,7 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
   private frame?: FractalFrame;
   private animationFrame?: number;
   private frameContext: CanvasRenderingContext2D | null = null;
+  private resizeObserver?: ResizeObserver;
 
   @ViewChild('control', { static: true })
   private readonly controlCanvasElement!: ElementRef<HTMLCanvasElement>;
@@ -72,6 +75,7 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
   private readonly updateIterations = signalMethod<number>(() => this.render());
 
   public ngAfterViewInit(): void {
+    this.resizeCanvases();
     this.controlContext = this.controlCanvasElement.nativeElement.getContext('2d');
     if (this.controlContext) {
       this.controlContext.lineWidth = 2;
@@ -111,9 +115,16 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
       [offscreenCanvas],
     );
     this.updateIterations(this.maxIteration, { injector: this.injector });
+    this.resizeObserver = new ResizeObserver(() => {
+      if (this.resizeCanvases()) {
+        this.render();
+      }
+    });
+    this.resizeObserver.observe(this.element.nativeElement);
   }
 
   public ngOnDestroy(): void {
+    this.resizeObserver?.disconnect();
     if (this.animationFrame !== undefined) {
       cancelAnimationFrame(this.animationFrame);
     }
@@ -197,11 +208,32 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
     this.requestFrame();
   }
 
+  private resizeCanvases(): boolean {
+    const width = Math.max(1, Math.trunc(this.element.nativeElement.clientWidth));
+    const height = Math.max(1, Math.trunc(this.element.nativeElement.clientHeight));
+    const canvas = this.frameCanvas.nativeElement;
+    if (canvas.width === width && canvas.height === height) {
+      return false;
+    }
+    for (const element of [canvas, this.controlCanvasElement.nativeElement]) {
+      element.width = width;
+      element.height = height;
+    }
+    if (this.controlContext) {
+      this.controlContext.lineWidth = 2;
+      this.controlContext.strokeStyle = 'orange';
+    }
+
+    return true;
+  }
+
   private isCurrent(frame: Omit<FractalFrame, 'image'>): boolean {
     const current = this.viewport.snapshot();
 
     return (
       frame.maxIteration === this.maxIteration() &&
+      frame.width === this.frameCanvas.nativeElement.width &&
+      frame.height === this.frameCanvas.nativeElement.height &&
       frame.coordinates.precision === current.precision &&
       frame.coordinates.span === current.span &&
       frame.coordinates.centerRe === current.centerRe &&
@@ -217,6 +249,8 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
       type: WorkerEvent.render,
       coordinates: this.viewport.snapshot(),
       maxIteration: this.maxIteration(),
+      width: this.frameCanvas.nativeElement.width,
+      height: this.frameCanvas.nativeElement.height,
     });
   }
 
@@ -232,7 +266,14 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
         return;
       }
       const canvas = this.frameCanvas.nativeElement;
-      const projection = frameProjection(frame.coordinates, this.viewport.snapshot(), canvas.width, canvas.height);
+      const projection = frameProjection(
+        frame.coordinates,
+        this.viewport.snapshot(),
+        canvas.width,
+        canvas.height,
+        frame.width,
+        frame.height,
+      );
       context.setTransform(1, 0, 0, 1, 0, 0);
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.setTransform(projection.scale, 0, 0, projection.scale, projection.x, projection.y);
@@ -249,7 +290,12 @@ export default class FractalComponent implements AfterViewInit, OnDestroy {
   }
 
   private postMessage(data: MandelbrotWorkerCommand, transfer: Transferable[] = []) {
-    this.inFlight = { coordinates: data.coordinates, maxIteration: data.maxIteration };
+    this.inFlight = {
+      coordinates: data.coordinates,
+      maxIteration: data.maxIteration,
+      width: this.frameCanvas.nativeElement.width,
+      height: this.frameCanvas.nativeElement.height,
+    };
     this.worker.postMessage(data, transfer);
   }
 }

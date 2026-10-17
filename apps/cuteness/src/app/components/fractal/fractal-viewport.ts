@@ -84,18 +84,20 @@ export function frameProjection(
   target: FractalView,
   width: number,
   height: number,
+  frameWidth = width,
+  frameHeight = height,
 ): { scale: number; x: number; y: number } {
   const precision = Math.max(frame.precision, target.precision);
   const fromShift = BigInt(precision - frame.precision);
   const toShift = BigInt(precision - target.precision);
   const span = target.span << toShift;
   const ratio = (value: bigint) => fixedToNumber((value << 32n) / span, 32);
-  const scale = ratio(frame.span << fromShift);
+  const scale = (ratio(frame.span << fromShift) * width) / frameWidth;
 
   return {
     scale,
-    x: (width / 2) * (1 - scale) + width * ratio((frame.centerRe << fromShift) - (target.centerRe << toShift)),
-    y: (height / 2) * (1 - scale) + width * ratio((frame.centerIm << fromShift) - (target.centerIm << toShift)),
+    x: (width - frameWidth * scale) / 2 + width * ratio((frame.centerRe << fromShift) - (target.centerRe << toShift)),
+    y: (height - frameHeight * scale) / 2 + width * ratio((frame.centerIm << fromShift) - (target.centerIm << toShift)),
   };
 }
 

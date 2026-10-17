@@ -16,6 +16,11 @@ body {
   align-items: stretch;
 }
 
+:focus,
+:focus-visible {
+  outline: none !important;
+}
+
 /* Добавьте это в начале файла styles.css */
 
 ::-webkit-scrollbar {

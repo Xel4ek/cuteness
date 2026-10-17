@@ -10,6 +10,8 @@ export type MandelbrotWorkerCommand =
     }
   | {
       type: WorkerEvent.render;
+      width: number;
+      height: number;
       coordinates: FractalView;
       maxIteration: number;
     };

@@ -21,7 +21,9 @@ class WorkerStub {
   public terminate = vi.fn();
 
   public complete(renderTimeMs = 0): ImageBitmap {
-    const image: ImageBitmap = { width: 400, height: 299, close: vi.fn() };
+    const request = this.postMessage.mock.calls.at(-1)?.[0];
+    const size = request?.type === WorkerEvent.init ? request.offscreenCanvas : request;
+    const image: ImageBitmap = { width: size?.width ?? 400, height: size?.height ?? 299, close: vi.fn() };
     this.onmessage?.(
       new MessageEvent('message', {
         data: {
@@ -44,6 +46,9 @@ describe('fractal navigation', () => {
   let worker: WorkerStub;
   let initialSpan: number;
   let originalHref: string;
+  let width: number;
+  let height: number;
+  let resize: () => void;
 
   function sharedLink(view: FractalView, maxIteration: number): string {
     return new URL(`/#/fractal?position=${encodeURIComponent(copyPosition(view, maxIteration))}`, window.location.href)
@@ -107,6 +112,20 @@ describe('fractal navigation', () => {
   }
 
   beforeEach(async () => {
+    width = 400;
+    height = 299;
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => width);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(() => height);
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          resize = callback;
+        }
+        public observe = vi.fn();
+        public disconnect = vi.fn();
+      },
+    );
     originalHref = window.location.href;
     worker = new WorkerStub();
     vi.stubGlobal(
@@ -130,8 +149,6 @@ describe('fractal navigation', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 400, 300));
     vi.spyOn(HTMLCanvasElement.prototype, 'offsetWidth', 'get').mockReturnValue(400);
-    vi.spyOn(document.body, 'clientWidth', 'get').mockReturnValue(400);
-    vi.spyOn(document.body, 'clientHeight', 'get').mockReturnValue(365);
 
     await TestBed.configureTestingModule({
       imports: [FractalComponent],
@@ -150,6 +167,35 @@ describe('fractal navigation', () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     window.history.replaceState(null, '', originalHref);
+  });
+
+  it('resizes both canvases and requests the latest size after a running frame finishes', () => {
+    const initial = worker.postMessage.mock.calls.at(-1)?.[0].coordinates;
+    const count = worker.postMessage.mock.calls.length;
+    worker.autoComplete = false;
+    width = 640;
+    height = 400;
+    resize();
+    width = 720;
+    height = 480;
+    resize();
+    expect(worker.postMessage).toHaveBeenCalledTimes(count + 1);
+    worker.complete();
+    expect(worker.postMessage).toHaveBeenCalledTimes(count + 2);
+    expect(worker.postMessage.mock.calls.at(-1)?.[0]).toMatchObject({
+      type: WorkerEvent.render,
+      width: 720,
+      height: 480,
+      coordinates: initial,
+    });
+    const root: HTMLElement = fixture.nativeElement;
+    for (const element of root.querySelectorAll('canvas')) {
+      expect(element.width).toBe(720);
+      expect(element.height).toBe(480);
+    }
+    worker.complete();
+    resize();
+    expect(worker.postMessage).toHaveBeenCalledTimes(count + 2);
   });
 
   it('shows the current center and copies a full link to its coordinates, zoom and iterations', () => {
@@ -272,6 +318,23 @@ describe('fractal navigation', () => {
     clipboard.readText.mockRejectedValue(new DOMException('Denied', 'NotAllowedError'));
     await paste();
     expect(fixture.nativeElement.querySelector('[role="status"]').textContent).toContain('Allow clipboard access');
+  });
+
+  it('commits edited iterations when the canvas takes focus', () => {
+    const root: HTMLElement = fixture.nativeElement;
+    const input = root.querySelector<HTMLInputElement>('cuteness-iteration-control input');
+    expect(input).not.toBeNull();
+    input?.focus();
+    if (input) {
+      input.value = '3100';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    fixture.detectChanges();
+    expect(worker.postMessage.mock.calls.at(-1)?.[0].maxIteration).toBe(2000);
+    canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(canvas);
+    expect(worker.postMessage.mock.calls.at(-1)?.[0].maxIteration).toBe(3100);
   });
 
   it('sends iteration signals to the worker after initialization and preserves them during navigation', () => {
