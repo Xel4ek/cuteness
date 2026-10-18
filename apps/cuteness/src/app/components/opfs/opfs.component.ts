@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
-import { MatButton } from '@angular/material/button';
+import { ZardButtonComponent } from '@cuteness/ui-kit';
 
 @Component({
   selector: 'cuteness-opfs',
   templateUrl: './opfs.component.html',
   styleUrl: './opfs.component.scss',
-  imports: [MatButton],
+  imports: [ZardButtonComponent],
 })
 export class OpfsComponent {
   protected async init() {

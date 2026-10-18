@@ -19,7 +19,7 @@
         "tsConfig": "apps/cuteness/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": ["apps/cuteness/src/favicon.ico", "apps/cuteness/src/assets"],
-        "styles": ["@angular/material/prebuilt-themes/purple-green.css", "apps/cuteness/src/styles.scss"],
+        "styles": ["apps/cuteness/src/ui.css", "apps/cuteness/src/styles.scss"],
         "scripts": [],
         "webWorkerTsConfig": "apps/cuteness/tsconfig.worker.json",
         "serviceWorker": true,

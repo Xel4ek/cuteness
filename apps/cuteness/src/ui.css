@@ -1,0 +1,5 @@
+@layer ng-icon, theme, base, components, utilities;
+@import 'tailwindcss';
+@import '../../../libs/ui-kit/src/styles.css';
+@source './app';
+@source '../../../libs/ui-kit/src/lib';

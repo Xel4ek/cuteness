@@ -1,8 +1,8 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, Input } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideCopy } from '@ng-icons/lucide';
+import { ZardButtonComponent, ZardTooltipDirective } from '@cuteness/ui-kit';
 
 import { ReplaceZeroWithInfinityPipe } from '../../../pipes/replace-zero-with-infinity.pipe';
 
@@ -10,7 +10,8 @@ import { ReplaceZeroWithInfinityPipe } from '../../../pipes/replace-zero-with-in
   selector: 'cuteness-matrix[adjacencyMatrix]',
   templateUrl: './matrix.component.html',
   styleUrls: ['./matrix.component.scss'],
-  imports: [MatTooltipModule, DecimalPipe, MatButtonModule, MatIconModule, ReplaceZeroWithInfinityPipe],
+  imports: [ZardTooltipDirective, DecimalPipe, ZardButtonComponent, NgIcon, ReplaceZeroWithInfinityPipe],
+  providers: [provideIcons({ lucideCopy })],
 })
 export class MatrixComponent {
   @Input()

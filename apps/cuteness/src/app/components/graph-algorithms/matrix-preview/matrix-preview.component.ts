@@ -1,6 +1,7 @@
 import { Component, input, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideGrid2X2, lucideX } from '@ng-icons/lucide';
+import { ZardButtonComponent } from '@cuteness/ui-kit';
 
 import { MatrixComponent } from '../matrix/matrix.component';
 
@@ -8,7 +9,8 @@ import { MatrixComponent } from '../matrix/matrix.component';
   selector: 'cuteness-matrix-preview',
   templateUrl: './matrix-preview.component.html',
   styleUrl: './matrix-preview.component.scss',
-  imports: [MatButtonModule, MatIconModule, MatrixComponent],
+  imports: [ZardButtonComponent, NgIcon, MatrixComponent],
+  providers: [provideIcons({ lucideGrid2X2, lucideX })],
   host: {
     '(pointerenter)': 'hover($event, true)',
     '(pointerleave)': 'hover($event, false)',

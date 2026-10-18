@@ -1,12 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { Route } from '@angular/router';
 import { Observable, animationFrameScheduler, interval, map, takeWhile } from 'rxjs';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucidePlay, lucideRotateCw, lucideScan, lucideShuffle, lucideSquare } from '@ng-icons/lucide';
+import { ZardButtonComponent, ZardSliderComponent, ZardSpinnerComponent, ZardTooltipDirective } from '@cuteness/ui-kit';
 
 import { GraphHelper, TsmResult } from '@cuteness/travelling-salesman-problem';
 
@@ -30,7 +28,8 @@ interface RunResult {
   selector: 'cuteness-graph-algorithms',
   templateUrl: './graph-algorithms.component.html',
   styleUrls: ['./graph-algorithms.component.scss'],
-  imports: [CommonModule, MatButtonModule, FormsModule, MatProgressSpinnerModule, MatIconModule, MatTooltipModule, GraphComponent, MatrixPreviewComponent],
+  imports: [CommonModule, ZardButtonComponent, ZardSliderComponent, ZardSpinnerComponent, NgIcon, ZardTooltipDirective, GraphComponent, MatrixPreviewComponent],
+  providers: [provideIcons({ lucidePlay, lucideRotateCw, lucideScan, lucideShuffle, lucideSquare })],
 })
 export class GraphAlgorithmsComponent implements OnInit, OnDestroy {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);

@@ -1,28 +1,46 @@
-<mat-drawer-container class="full-screen" autosize="true">
-  <mat-drawer-content class="full-screen">
-    <mat-toolbar color="primary" class="toolbar">
-      <button mat-icon-button (click)="nav.toggle()"><mat-icon>menu</mat-icon></button>
-      <a mat-button class="page-title" routerLink="/">{{ pageTitle() }}</a>
-      <span class="filler"></span>
-      <span class="info-block">
-        @for (item of info$ | async | keyvalue: null; track $index) {
-          <span class="info">{{ item.key | titlecase }}: {{ item.value }}</span>
-        }
-      </span>
-    </mat-toolbar>
+<header class="toolbar">
+  <button
+    type="button"
+    z-button
+    zType="ghost"
+    zSize="icon"
+    class="hover:bg-primary hover:text-primary-foreground"
+    aria-label="Open navigation"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="navigationOpen()"
+    (click)="navigationOpen.set(true)"
+  >
+    <ng-icon name="lucideMenu" />
+  </button>
+  <a z-button zType="ghost" class="page-title hover:bg-primary hover:text-primary-foreground" routerLink="/">{{
+    pageTitle()
+  }}</a>
+  <span class="info-block">
+    @for (item of info$ | async | keyvalue: null; track item.key) {
+      <span class="info"
+        ><span>{{ item.key | titlecase }}</span> {{ item.value }}</span
+      >
+    }
+  </span>
+</header>
 
-    <mat-sidenav-container class="full-screen">
-      <mat-sidenav #nav mode="over" class="sidenav">
-        <mat-nav-list>
-          @for (nav of modules; track nav) {
-            <a mat-list-item [routerLink]="['/', getRoute(nav)]">{{ nav }}</a>
-          }
-        </mat-nav-list>
-      </mat-sidenav>
+<z-sheet [(zVisible)]="navigationOpen" zLabel="Main navigation">
+  <h2 class="m-0 px-4 py-4 pr-14 text-base font-semibold">Cuteness</h2>
+  <nav class="navigation" aria-label="Main navigation">
+    @for (module of modules; track module) {
+      <a
+        z-button
+        zType="ghost"
+        [routerLink]="['/', getRoute(module)]"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+        (click)="navigationOpen.set(false)"
+        >{{ module }}</a
+      >
+    }
+  </nav>
+</z-sheet>
 
-      <mat-sidenav-content class="mat-sidenav-content">
-        <router-outlet></router-outlet>
-      </mat-sidenav-content>
-    </mat-sidenav-container>
-  </mat-drawer-content>
-</mat-drawer-container>
+<main class="page-content">
+  <router-outlet></router-outlet>
+</main>

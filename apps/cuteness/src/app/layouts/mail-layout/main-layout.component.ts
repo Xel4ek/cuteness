@@ -1,6 +1,5 @@
-import { Component, DestroyRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MatSidenav } from '@angular/material/sidenav';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 
@@ -19,8 +18,7 @@ export class MainLayoutComponent implements OnInit {
 
   public modules = ['Fractal', 'TSP', 'Solar System'];
 
-  @ViewChild('nav')
-  private sideNav?: MatSidenav;
+  protected readonly navigationOpen = signal(false);
 
   protected readonly info$ = this.mainLayoutHeaderService.getHeaderInfo();
   protected readonly pageTitle = signal('Cuteness');
@@ -39,7 +37,7 @@ export class MainLayoutComponent implements OnInit {
         }
 
         this.pageTitle.set(route.title ?? 'Cuteness');
-        this.sideNav?.close();
+        this.navigationOpen.set(false);
         this.mainLayoutHeaderService.setHeaderInfo({});
       });
   }

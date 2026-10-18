@@ -1,11 +1,13 @@
 import { Component, ElementRef, computed, input, linkedSignal, model, output, viewChild } from '@angular/core';
 import { FormValueControl } from '@angular/forms/signals';
 import { clamp } from 'es-toolkit/math';
+import { ZardButtonComponent } from '@cuteness/ui-kit';
 
 @Component({
   selector: 'cuteness-iteration-control',
   templateUrl: './iteration-control.component.html',
   styleUrl: './iteration-control.component.scss',
+  imports: [ZardButtonComponent],
 })
 export class IterationControlComponent implements FormValueControl<number> {
   public readonly value = model.required<number>();

@@ -18,7 +18,8 @@
       "@cuteness/travelling-salesman-problem": ["./libs/travelling-salesman-problem/src/index.ts"],
       "@cuteness/fractal": ["./vendors/fractal/pkg"],
       "@cuteness/graph-algorithms-wasm": ["./vendors/graph-algorithms/pkg"],
-      "@cuteness/solar-system": ["./vendors/solar-system/pkg"]
+      "@cuteness/solar-system": ["./vendors/solar-system/pkg"],
+      "@cuteness/ui-kit": ["./libs/ui-kit/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

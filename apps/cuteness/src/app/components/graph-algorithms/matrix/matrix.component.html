@@ -1,5 +1,13 @@
-<button mat-icon-button (click)="copyTableToClipboard()" class="copy-button">
-  <mat-icon>file_copy</mat-icon>
+<button
+  z-button
+  zType="ghost"
+  zSize="icon"
+  aria-label="Copy adjacency matrix"
+  zTooltip="Copy matrix"
+  (click)="copyTableToClipboard()"
+  class="copy-button"
+>
+  <ng-icon name="lucideCopy" />
 </button>
 <div class="table-content">
   <table>
@@ -7,7 +15,7 @@
       <tr>
         @for (cell of row; track $index; let j = $index) {
           <td class="cell" [class.used]="inSolution(i, j)">
-            <span [matTooltip]="(cell | number) ?? ''" [class.infinity]="cell === 0">
+            <span [zTooltip]="(cell | number) ?? ''" [class.infinity]="cell === 0">
               {{ cell | number | replaceZeroWithInfinity }}
             </span>
           </td>

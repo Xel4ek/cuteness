@@ -3,47 +3,54 @@
 <section class="controls" aria-label="Graph settings">
   <div class="graph-actions">
     <button
-      mat-icon-button
+      z-button
+      zType="ghost"
+      zSize="icon"
       aria-label="Generate"
-      matTooltip="Generate graph"
+      zTooltip="Generate graph"
       (click)="generateMatrix()"
       [disabled]="processing"
     >
-      <mat-icon>shuffle</mat-icon>
+      <ng-icon name="lucideShuffle" />
     </button>
-    <button mat-icon-button aria-label="Fit graph to view" matTooltip="Fit graph to view" (click)="graph.fitView()">
-      <mat-icon>center_focus_strong</mat-icon>
+    <button
+      z-button
+      zType="ghost"
+      zSize="icon"
+      aria-label="Fit graph to view"
+      zTooltip="Fit graph to view"
+      (click)="graph.fitView()"
+    >
+      <ng-icon name="lucideScan" />
     </button>
     <cuteness-matrix-preview [adjacencyMatrix]="adjacencyMatrix" [solution]="solution?.vertices ?? []" />
   </div>
   <div class="slider-block">
-    <label for="graph-size"
-      >Vertices <strong>{{ size }}</strong></label
+    <span class="slider-label"
+      >Vertices <strong>{{ size }}</strong></span
     >
-    <input
+    <z-slider
       id="graph-size"
-      type="range"
-      min="3"
-      max="100"
-      step="1"
-      [(ngModel)]="size"
-      [style.--range-fill]="((size - 3) / (100 - 3)) * 100 + '%'"
-      [disabled]="processing"
+      zAriaLabel="Vertices"
+      zMin="3"
+      zMax="100"
+      zStep="1"
+      [(zValue)]="size"
+      [zDisabled]="processing"
     />
   </div>
   <div class="slider-block">
-    <label for="graph-fill"
-      >Fill <strong>{{ chance * 100 | number: '.0-0' }}%</strong></label
+    <span class="slider-label"
+      >Fill <strong>{{ chance * 100 | number: '.0-0' }}%</strong></span
     >
-    <input
+    <z-slider
       id="graph-fill"
-      type="range"
-      min="0"
-      max="1"
-      step="0.01"
-      [(ngModel)]="chance"
-      [style.--range-fill]="chance * 100 + '%'"
-      [disabled]="processing"
+      zAriaLabel="Fill"
+      zMin="0"
+      zMax="1"
+      zStep="0.01"
+      [(zValue)]="chance"
+      [zDisabled]="processing"
     />
   </div>
 </section>
@@ -64,7 +71,7 @@
         <span>{{ method.title }}</span>
         @if (running) {
           <span class="algorithm-metrics" role="status">
-            <mat-spinner [diameter]="14" />
+            <z-spinner class="size-3.5" />
             <span>{{ elapsedTime$ | async }}</span>
           </span>
         } @else if (run) {
@@ -73,29 +80,33 @@
             <span>{{ formatTime(run.timeElapsed) }}</span>
           </span>
         } @else {
-          <mat-icon class="run-icon" aria-hidden="true">play_arrow</mat-icon>
+          <ng-icon class="run-icon" aria-hidden="true" name="lucidePlay" />
         }
       </button>
       @if (running) {
         <button
           class="algorithm-action"
-          mat-icon-button
+          z-button
+          zType="ghost"
+          zSize="icon"
           [attr.aria-label]="'Stop ' + method.title"
-          matTooltip="Stop"
+          zTooltip="Stop"
           (click)="stop()"
         >
-          <mat-icon>stop</mat-icon>
+          <ng-icon name="lucideSquare" />
         </button>
       } @else if (run) {
         <button
           class="algorithm-action"
-          mat-icon-button
+          z-button
+          zType="ghost"
+          zSize="icon"
           [attr.aria-label]="'Run ' + method.title + ' again'"
-          matTooltip="Run again"
+          zTooltip="Run again"
           [disabled]="processing"
           (click)="solve(method)"
         >
-          <mat-icon>refresh</mat-icon>
+          <ng-icon name="lucideRotateCw" />
         </button>
       }
       @if (run?.solution; as result) {
